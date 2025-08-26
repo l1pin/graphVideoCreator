@@ -1547,12 +1547,69 @@
             color: #b91c1c;
         }
 
+        .calendar-neutral {
+            background: #f8fafc !important;
+            border-color: #e2e8f0 !important;
+        }
+
+        .calendar-neutral .calendar-values {
+            color: #374151;
+        }
+
+        .calendar-active {
+            background: #dbeafe !important;
+            border-color: #3b82f6 !important;
+        }
+
+        .calendar-active .calendar-values {
+            color: #1e40af;
+            font-weight: 600;
+        }
+
+        .calendar-active .calendar-values div {
+            font-weight: 600;
+        }
+
         .calendar-child {
             display: none;
         }
 
         .calendar-child.visible {
             display: table-row;
+        }
+
+        .calendar-values {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            font-size: 10px;
+            line-height: 1.2;
+            color: #374151;
+        }
+
+        .calendar-values div {
+            font-weight: 500;
+        }
+
+        .calendar-cell {
+            margin: 2px;
+            padding: 4px;
+            border-radius: 6px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            min-height: 80px;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-cell:hover.calendar-active {
+            background: #bfdbfe !important;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
         }
 
         /* Level borders */
@@ -2462,11 +2519,8 @@
 
             function getCPLStatus(leads, spend) {
                 if (spend === 0 && leads === 0) return 'calendar-muted';
-                if (spend > 0 && leads === 0) return 'calendar-danger';
-                const cpl = leads > 0 ? spend / leads : 0;
-                if (cpl <= 2.0) return 'calendar-good';
-                if (cpl <= 3.0) return 'calendar-warning';
-                return 'calendar-danger';
+                if (spend > 0) return 'calendar-active';
+                return 'calendar-neutral';
             }
 
             function formatCPL(leads, spend) {
@@ -2492,39 +2546,51 @@
               <tbody>`;
 
             let rowIndex = 0;
-            Object.keys(calendarData).forEach((trackerName) => {
-                const trackerData = calendarData[trackerName];
-                const trackerId = `tracker_${rowIndex++}`;
+            Object.keys(calendarData).forEach((videoName) => {
+                const videoData = calendarData[videoName];
+                const videoId = `video_${rowIndex++}`;
 
                 html += `
-            <tr class="lvl0" data-id="${trackerId}">
+            <tr class="lvl0" data-id="${videoId}">
               <td>
                 <div class="calendar-row">
-                  <div class="calendar-toggle" data-target="${trackerId}">▾</div>
+                  <div class="calendar-toggle" data-target="${videoId}">▾</div>
                   <div class="calendar-info">
-                    <div class="calendar-name">📊 ${escapeHtml(trackerName)}</div>
-                    <div class="calendar-alias">${Object.keys(trackerData.campaigns || {}).length} ${Object.keys(trackerData.campaigns || {}).length === 1 ? 'кампания' : Object.keys(trackerData.campaigns || {}).length < 5 ? 'кампании' : 'кампаний'}</div>
+                    <div class="calendar-name">🎬 ${escapeHtml(videoName)}</div>
+                    <div class="calendar-alias">${Object.keys(videoData.campaigns || {}).length} ${Object.keys(videoData.campaigns || {}).length === 1 ? 'кампания' : Object.keys(videoData.campaigns || {}).length < 5 ? 'кампании' : 'кампаний'}</div>
                   </div>
                 </div>
               </td>
               ${allDates.map(date => {
-                    const dateIndex = trackerData.dates.indexOf(date);
+                    const dateIndex = videoData.dates.indexOf(date);
                     let totalLeads = 0, totalSpend = 0;
 
                     if (dateIndex >= 0) {
-                        Object.values(trackerData.campaigns || {}).forEach(campaignData => {
+                        Object.values(videoData.campaigns || {}).forEach(campaignData => {
                             totalLeads += campaignData.leads[dateIndex] || 0;
                             totalSpend += campaignData.spend[dateIndex] || 0;
+                        });
+                    }
+
+                    // Расчет дополнительных метрик для видео
+                    let totalCTR = 0, totalCPM = 0, ctrCount = 0, cpmCount = 0;
+                    
+                    if (dateIndex >= 0) {
+                        Object.values(videoData.campaigns || {}).forEach(campaignData => {
+                            // Получаем данные из fbDataMapByBuyerCampaign если они есть
+                            // Пока используем заглушки, т.к. нужен доступ к Facebook метрикам
                         });
                     }
 
                     return `
                   <td>
                     <div class="calendar-cell ${getCPLStatus(totalLeads, totalSpend)}">
-                      <div class="calendar-cpl">${formatCPL(totalLeads, totalSpend)}</div>
-                      <div class="calendar-mini">
-                        <span>л: ${totalLeads}</span>
-                        <span>р: ${formatValue(totalSpend)}</span>
+                      <div class="calendar-values">
+                        <div>CTR: ${totalCTR > 0 ? totalCTR.toFixed(2) + '%' : '—'}</div>
+                        <div>CPM: ${totalCPM > 0 ? totalCPM.toFixed(2) : '—'}</div>
+                        <div>CPL: ${formatCPL(totalLeads, totalSpend)}</div>
+                        <div>Лиды: ${totalLeads}</div>
+                        <div>Расх.: ${formatValue(totalSpend)}</div>
                       </div>
                     </div>
                   </td>
@@ -2532,12 +2598,12 @@
                 }).join('')}
             </tr>`;
 
-                Object.keys(trackerData.campaigns || {}).forEach((campaignName) => {
-                    const campaignData = trackerData.campaigns[campaignName];
+                Object.keys(videoData.campaigns || {}).forEach((campaignName) => {
+                    const campaignData = videoData.campaigns[campaignName];
                     const campaignId = `campaign_${rowIndex++}`;
 
                     html += `
-              <tr class="lvl1 calendar-child child-of-${trackerId}" data-id="${campaignId}">
+              <tr class="lvl1 calendar-child child-of-${videoId}" data-id="${campaignId}">
                 <td>
                   <div class="calendar-row">
                     <div class="calendar-toggle" data-target="${campaignId}">▾</div>
@@ -2548,7 +2614,7 @@
                   </div>
                 </td>
                 ${allDates.map(date => {
-                        const dateIndex = trackerData.dates.indexOf(date);
+                        const dateIndex = videoData.dates.indexOf(date);
                         const cpl = dateIndex >= 0 ? (campaignData.cpl[dateIndex] || 0) : 0;
                         const leads = dateIndex >= 0 ? (campaignData.leads[dateIndex] || 0) : 0;
                         const spend = dateIndex >= 0 ? (campaignData.spend[dateIndex] || 0) : 0;
@@ -2556,10 +2622,12 @@
                         return `
                     <td>
                       <div class="calendar-cell ${getCPLStatus(leads, spend)}">
-                        <div class="calendar-cpl">${formatCPL(leads, spend)}</div>
-                        <div class="calendar-mini">
-                          <span>л: ${leads}</span>
-                          <span>р: ${formatValue(spend)}</span>
+                        <div class="calendar-values">
+                          <div>CTR: —</div>
+                          <div>CPM: —</div>
+                          <div>CPL: ${formatCPL(leads, spend)}</div>
+                          <div>Лиды: ${leads}</div>
+                          <div>Расх.: ${formatValue(spend)}</div>
                         </div>
                       </div>
                     </td>
@@ -2583,7 +2651,7 @@
                     </div>
                   </td>
                   ${allDates.map(date => {
-                            const dateIndex = trackerData.dates.indexOf(date);
+                            const dateIndex = videoData.dates.indexOf(date);
                             const cpl = dateIndex >= 0 ? (groupData.cpl[dateIndex] || 0) : 0;
                             const leads = dateIndex >= 0 ? (groupData.leads[dateIndex] || 0) : 0;
                             const spend = dateIndex >= 0 ? (groupData.spend[dateIndex] || 0) : 0;
@@ -2591,16 +2659,18 @@
                             return `
                       <td>
                         <div class="calendar-cell ${getCPLStatus(leads, spend)}">
-                          <div class="calendar-cpl">${formatCPL(leads, spend)}</div>
-                          <div class="calendar-mini">
-                            <span>л: ${leads}</span>
-                            <span>р: ${formatValue(spend)}</span>
+                          <div class="calendar-values">
+                            <div>CTR: —</div>
+                            <div>CPM: —</div>
+                            <div>CPL: ${formatCPL(leads, spend)}</div>
+                            <div>Лиды: ${leads}</div>
+                            <div>Расх.: ${formatValue(spend)}</div>
                           </div>
                         </div>
                       </td>
                     `;
                         }).join('')}
-                </tr>`;
+                  </tr>`;
 
                         Object.keys(groupData.ads || {}).forEach((adName) => {
                             const adData = groupData.ads[adName];
@@ -2617,7 +2687,7 @@
                       </div>
                     </td>
                     ${allDates.map(date => {
-                                const dateIndex = trackerData.dates.indexOf(date);
+                                const dateIndex = videoData.dates.indexOf(date);
                                 const cpl = dateIndex >= 0 ? (adData.cpl[dateIndex] || 0) : 0;
                                 const leads = dateIndex >= 0 ? (adData.leads[dateIndex] || 0) : 0;
                                 const spend = dateIndex >= 0 ? (adData.spend[dateIndex] || 0) : 0;
@@ -2625,10 +2695,12 @@
                                 return `
                         <td>
                           <div class="calendar-cell ${getCPLStatus(leads, spend)}">
-                            <div class="calendar-cpl">${formatCPL(leads, spend)}</div>
-                            <div class="calendar-mini">
-                              <span>л: ${leads}</span>
-                              <span>р: ${formatValue(spend)}</span>
+                            <div class="calendar-values">
+                              <div>CTR: —</div>
+                              <div>CPM: —</div>
+                              <div>CPL: ${formatCPL(leads, spend)}</div>
+                              <div>Лиды: ${leads}</div>
+                              <div>Расх.: ${formatValue(spend)}</div>
                             </div>
                           </div>
                         </td>
@@ -2835,23 +2907,23 @@
                     return '<div class="nav-placeholder"><i class="fas fa-calendar-times"></i><span>Нет данных календаря</span></div>';
                 }
 
-                Object.keys(calendarData).forEach((trackerName, trackerIndex) => {
-                    const trackerData = calendarData[trackerName];
-                    const cleanTrackerName = cleanName(trackerName, trackerIndex, 'tracker');
+                Object.keys(calendarData).forEach((videoName, videoIndex) => {
+                    const videoData = calendarData[videoName];
+                    const cleanVideoName = cleanName(videoName, videoIndex, 'video');
 
-                    console.log(`🔍 CALENDAR NAV: Creating tracker:`, trackerName);
+                    console.log(`🔍 CALENDAR NAV: Creating video:`, videoName);
 
                     html += `
-                        <div class="nav-tree-item level-0" onclick="scrollToCalendarElement('${escapeHtml(trackerName)}', 'tracker')">
-                            <i class="fas fa-chart-line nav-icon"></i>
-                            ${escapeHtml(trackerName)}
-                            <span class="nav-tree-toggle" onclick="event.stopPropagation(); toggleNavTree('calendar_tracker_${trackerIndex}')">▸</span>
+                        <div class="nav-tree-item level-0" onclick="scrollToCalendarElement('${escapeHtml(videoName)}', 'video')">
+                            <i class="fas fa-video nav-icon"></i>
+                            ${escapeHtml(videoName)}
+                            <span class="nav-tree-toggle" onclick="event.stopPropagation(); toggleNavTree('calendar_video_${videoIndex}')">▸</span>
                         </div>
-                        <div class="nav-tree-children collapsed" id="calendar_tracker_${trackerIndex}_children">
+                        <div class="nav-tree-children collapsed" id="calendar_video_${videoIndex}_children">
                     `;
 
-                    Object.keys(trackerData.campaigns || {}).forEach((campaignName, campaignIndex) => {
-                        const campaignData = trackerData.campaigns[campaignName];
+                    Object.keys(videoData.campaigns || {}).forEach((campaignName, campaignIndex) => {
+                        const campaignData = videoData.campaigns[campaignName];
 
                         console.log(`🔍 CALENDAR NAV: Creating campaign:`, campaignName);
 
@@ -2859,9 +2931,9 @@
                             <div class="nav-tree-item level-1" onclick="scrollToCalendarElement('${escapeHtml(campaignName)}', 'campaign')">
                                 <i class="fas fa-tv nav-icon"></i>
                                 ${escapeHtml(campaignName)}
-                                <span class="nav-tree-toggle" onclick="event.stopPropagation(); toggleNavTree('calendar_campaign_${trackerIndex}_${campaignIndex}')">▸</span>
+                                <span class="nav-tree-toggle" onclick="event.stopPropagation(); toggleNavTree('calendar_campaign_${videoIndex}_${campaignIndex}')">▸</span>
                             </div>
-                            <div class="nav-tree-children collapsed" id="calendar_campaign_${trackerIndex}_${campaignIndex}_children">
+                            <div class="nav-tree-children collapsed" id="calendar_campaign_${videoIndex}_${campaignIndex}_children">
                         `;
 
                         Object.keys(campaignData.groups || {}).forEach((groupName, groupIndex) => {
@@ -2873,9 +2945,9 @@
                                 <div class="nav-tree-item level-2" onclick="scrollToCalendarElement('${escapeHtml(groupName)}', 'group')">
                                     <i class="fas fa-folder nav-icon"></i>
                                     ${escapeHtml(groupName)}
-                                    <span class="nav-tree-toggle" onclick="event.stopPropagation(); toggleNavTree('calendar_group_${trackerIndex}_${campaignIndex}_${groupIndex}')">▸</span>
+                                    <span class="nav-tree-toggle" onclick="event.stopPropagation(); toggleNavTree('calendar_group_${videoIndex}_${campaignIndex}_${groupIndex}')">▸</span>
                                 </div>
-                                <div class="nav-tree-children collapsed" id="calendar_group_${trackerIndex}_${campaignIndex}_${groupIndex}_children">
+                                <div class="nav-tree-children collapsed" id="calendar_group_${videoIndex}_${campaignIndex}_${groupIndex}_children">
                             `;
 
                             Object.keys(groupData.ads || {}).forEach((adName, adIndex) => {
@@ -5770,6 +5842,11 @@
         // Calendar navigation function
         function scrollToCalendarElement(elementName, elementType) {
             console.log('📅 CALENDAR NAVIGATION for:', elementName, 'type:', elementType);
+            
+            // Поддерживаем новый тип 'video' как альтернативу 'tracker'
+            if (elementType === 'video') {
+                elementType = 'video';  // Обрабатываем как видео
+            }
             
             // Находим элемент в таблице календаря по тексту
             const calendarTable = document.querySelector('.calendar-table');
