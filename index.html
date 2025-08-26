@@ -5287,89 +5287,89 @@
                     let className = "";
                     let cellStyle = "";
 
-                    if (segmentType === "buyer") {
-                        switch (index) {
-                            case 0:
-                                value = data.dates[i];
-                                break;
-                            case 1:
-                                value = data.ratings[i];
-                                className = value ? `rating-${value}` : "";
-                                break;
-                            case 2:
-                                value = formatNumberWithZero(data.cplDay[i]);
-                                break;
-                            case 3:
-                                value = data.leadsDay[i];
-                                break;
-                            case 4:
-                                value = formatNumberWithZero(data.spendDay[i]);
-                                break;
-                            case 5:
-                                value = data.conversionDay ? data.conversionDay[i] : "";
-                                break;
-                            case 6:
-                                value = formatNumber(data.maxCPL ? data.maxCPL[i] : "");
-                                break;
-                            case 7:
-                                value = formatNumberWithZero(
-                                    data.cplCumulative ? data.cplCumulative[i] : 0
-                                );
-                                if (data.cplCumulativeArrows && data.cplCumulativeArrows[i]) {
-                                    value += " " + data.cplCumulativeArrows[i];
+                    if (segmentType === "buyer" || segmentType === "creative") {
+                    switch (index) {
+                        case 0:
+                            value = data.dates[i];
+                            break;
+                        case 1:
+                            value = data.ratings[i];
+                            className = value ? `rating-${value}` : "";
+                            break;
+                        case 2:
+                            value = formatNumberWithZero(data.cplDay[i]);
+                            break;
+                        case 3:
+                            value = data.leadsDay[i];
+                            break;
+                        case 4:
+                            value = formatNumberWithZero(data.spendDay[i]);
+                            break;
+                        case 5:
+                            value = data.conversionDay ? data.conversionDay[i] : "";
+                            break;
+                        case 6:
+                            value = formatNumber(data.maxCPL ? data.maxCPL[i] : "");
+                            break;
+                        case 7:
+                            value = formatNumberWithZero(
+                                data.cplCumulative ? data.cplCumulative[i] : 0
+                            );
+                            if (data.cplCumulativeArrows && data.cplCumulativeArrows[i]) {
+                                value += " " + data.cplCumulativeArrows[i];
+                            }
+                            if (data.cplCumulativeColors && data.cplCumulativeColors[i]) {
+                                const color = data.cplCumulativeColors[i];
+                                if (color === "green") {
+                                    cellStyle =
+                                        "background-color: #dcfce7 !important; color: #166534 !important; font-weight: bold;";
+                                } else if (color === "red") {
+                                    cellStyle =
+                                        "background-color: #fecaca !important; color: #dc2626 !important; font-weight: bold;";
+                                } else if (color === "gray") {
+                                    cellStyle =
+                                        "background-color: #f3f4f6 !important; color: #6b7280 !important;";
                                 }
-                                if (data.cplCumulativeColors && data.cplCumulativeColors[i]) {
-                                    const color = data.cplCumulativeColors[i];
-                                    if (color === "green") {
-                                        cellStyle =
-                                            "background-color: #dcfce7 !important; color: #166534 !important; font-weight: bold;";
-                                    } else if (color === "red") {
-                                        cellStyle =
-                                            "background-color: #fecaca !important; color: #dc2626 !important; font-weight: bold;";
-                                    } else if (color === "gray") {
-                                        cellStyle =
-                                            "background-color: #f3f4f6 !important; color: #6b7280 !important;";
-                                    }
-                                }
-                                break;
-                            case 8:
-                                const buyerGroupValue = data.groups ? data.groups[i] : "";
-                                value = makeGroupsClickable(buyerGroupValue, `buyer_groups_${i}`);
-                                break;
-                            case 9:
-                                value = data.freq ? data.freq[i] : "";
-                                break;
-                            case 10:
-                                value = data.ctr ? data.ctr[i] : "";
-                                break;
-                            case 11:
-                                value = data.cpm ? data.cpm[i] : "";
-                                break;
-                            case 12:
-                                value = data.impressions[i];
-                                break;
-                            case 13:
-                                value = data.linkClicks ? data.linkClicks[i] : "";
-                                break;
-                            case 14:
-                                value = data.cpc ? data.cpc[i] : "";
-                                break;
-                            case 15:
-                                value = data.avgWatchTime ? data.avgWatchTime[i] : "";
-                                break;
-                            case 16:
-                                const buyerAdValue = data.videoName ? data.videoName[i] : "";
-                                value = makeAdsClickable(buyerAdValue, `buyer_ads_${i}`);
-                                break;
-                            case 17:
-                                const urlValue = data.siteUrl ? data.siteUrl[i] : "";
-                                value = makeUrlsClickable(urlValue);
-                                break;
-                            case 18:
-                                value = data.budget ? data.budget[i] : "";
-                                break;
-                        }
-                    } else if (segmentType === "campaign" || segmentType === "group" || segmentType === "ad") {
+                            }
+                            break;
+                        case 8:
+                            const buyerGroupValue = data.groups ? data.groups[i] : "";
+                            value = makeGroupsClickable(buyerGroupValue, `${segmentType}_groups_${i}`);
+                            break;
+                        case 9:
+                            value = data.freq ? data.freq[i] : "";
+                            break;
+                        case 10:
+                            value = data.ctr ? data.ctr[i] : "";
+                            break;
+                        case 11:
+                            value = data.cpm ? data.cpm[i] : "";
+                            break;
+                        case 12:
+                            value = data.impressions[i];
+                            break;
+                        case 13:
+                            value = data.linkClicks ? data.linkClicks[i] : "";
+                            break;
+                        case 14:
+                            value = data.cpc ? data.cpc[i] : "";
+                            break;
+                        case 15:
+                            value = data.avgWatchTime ? data.avgWatchTime[i] : "";
+                            break;
+                        case 16:
+                            const buyerAdValue = data.videoName ? data.videoName[i] : "";
+                            value = makeAdsClickable(buyerAdValue, `${segmentType}_ads_${i}`);
+                            break;
+                        case 17:
+                            const urlValue = data.siteUrl ? data.siteUrl[i] : "";
+                            value = makeUrlsClickable(urlValue);
+                            break;
+                        case 18:
+                            value = data.budget ? data.budget[i] : "";
+                            break;
+                    }
+                } else if (segmentType === "campaign" || segmentType === "group" || segmentType === "ad") {
                         switch (index) {
                             case 0:
                                 value = data.dates[i];
@@ -5462,12 +5462,12 @@
                     }
 
                     if (
-                        (segmentType === "buyer" && index === 17) ||
+                        ((segmentType === "buyer" || segmentType === "creative") && index === 17) ||
                         ((segmentType === "campaign" || segmentType === "group" || segmentType === "ad") && index === 16)
                     ) {
                         html += `<td class="${className} url-cell" style="${cellStyle}${additionalStyle}">${value}</td>`;
                     } else if (
-                        (segmentType === "buyer" && (index === 8 || index === 16)) ||
+                        ((segmentType === "buyer" || segmentType === "creative") && (index === 8 || index === 16)) ||
                         ((segmentType === "campaign" || segmentType === "group" || segmentType === "ad") && index === 15)
                     ) {
                         html += `<td class="${className}" style="${cellStyle}${additionalStyle}">${value}</td>`;
