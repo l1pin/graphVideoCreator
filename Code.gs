@@ -525,7 +525,7 @@ function buildChartForArticle(article, periodStart, periodEnd) {
             console.log("⚠️ No dates selected - showing all data");
         }
 
-        // Получаем данные из КАПЫ 3.0 (если доступны)
+        // Получаем данные из Списoк2.0 (если доступны)
         let maxCPLThreshold = 3.5;
         let status = "Активный";
         let stock = "Не указано";
@@ -544,10 +544,10 @@ function buildChartForArticle(article, periodStart, periodEnd) {
 
         try {
             const ss = SpreadsheetApp.getActiveSpreadsheet();
-            const sheetKapy = ss.getSheetByName("КАПЫ 3.0");
+            const sheetKapy = ss.getSheetByName("Списoк2.0");
 
             if (sheetKapy) {
-                console.log("📊 Reading data from КАПЫ 3.0 sheet...");
+                console.log("📊 Reading data from Списoк2.0 sheet...");
                 const kapyData = sheetKapy.getDataRange().getValues();
                 let articleRow = null;
 
@@ -561,7 +561,7 @@ function buildChartForArticle(article, periodStart, periodEnd) {
 
                 // ПРОВЕРКА 1: Артикул существует
                 if (!articleRow) {
-                    console.log("❌ Article not found in КАПЫ 3.0");
+                    console.log("❌ Article not found in Списoк2.0");
                     throw new Error(
                         `📝 Неверный артикул!\n\nАртикул "${article}" не найден в системе.\n\nПроверьте правильность написания артикула.`
                     );
@@ -581,7 +581,7 @@ function buildChartForArticle(article, periodStart, periodEnd) {
                 console.log("✅ Article found and permission granted:", article);
 
                 if (articleRow) {
-                    console.log("✅ Found article in КАПЫ 3.0 at row:", articleRow);
+                    console.log("✅ Found article in Списoк2.0 at row:", articleRow);
                     const rawAB = sheetKapy.getRange(articleRow, 28).getValue();
                     const rawAF = sheetKapy.getRange(articleRow, 32).getValue();
 
@@ -695,13 +695,13 @@ function buildChartForArticle(article, periodStart, periodEnd) {
                     };
                 }
             } else {
-                console.log("⚠️ КАПЫ 3.0 sheet not found");
+                console.log("⚠️ Списoк2.0 sheet not found");
                 throw new Error(
-                    `📋 Лист "КАПЫ 3.0" не найден!\n\nОбратитесь к администратору для настройки системы.`
+                    `📋 Лист "Списoк2.0" не найден!\n\nОбратитесь к администратору для настройки системы.`
                 );
             }
         } catch (e) {
-            console.log("❌ Ошибка при получении данных из КАПЫ 3.0:", e);
+            console.log("❌ Ошибка при получении данных из Списoк2.0:", e);
             // Если это уже наша пользовательская ошибка, перебрасываем как есть
             if (e.message && (e.message.includes("📋") || e.message.includes("🔒") || e.message.includes("📝"))) {
                 throw e;
@@ -2214,6 +2214,7 @@ function buildChartForArticle(article, periodStart, periodEnd) {
             const campaignName = String(row.campaign_name || "").trim();
             const groupName = String(row.adv_group_name || "").trim();
             const adName = String(row.adv_name || "").trim();
+            const videoName = String(row.video_name || "").trim();
             const dateObj = new Date(row.adv_date);
 
             if (isNaN(dateObj.getTime()) || !trackerName.includes(article)) return;
@@ -2223,22 +2224,28 @@ function buildChartForArticle(article, periodStart, periodEnd) {
             const spend = Number(row.cost) || 0;
             const cpl = leads > 0 ? spend / leads : 0;
 
-            // Создаем структуру трекера
-            if (!calendarData[trackerName]) {
-                calendarData[trackerName] = {
+            // Пропускаем записи без названия видео
+            if (!videoName || videoName.trim() === "") return;
+
+            // Используем только название видео как ключ верхнего уровня
+            const topLevelKey = videoName.trim();
+
+            // Создаем структуру видео
+            if (!calendarData[topLevelKey]) {
+                calendarData[topLevelKey] = {
                     dates: [],
                     campaigns: {}
                 };
             }
 
             // Добавляем дату если её нет
-            if (!calendarData[trackerName].dates.includes(dateStr)) {
-                calendarData[trackerName].dates.push(dateStr);
+            if (!calendarData[topLevelKey].dates.includes(dateStr)) {
+                calendarData[topLevelKey].dates.push(dateStr);
             }
 
             // Создаем структуру кампании
-            if (campaignName && !calendarData[trackerName].campaigns[campaignName]) {
-                calendarData[trackerName].campaigns[campaignName] = {
+            if (campaignName && !calendarData[topLevelKey].campaigns[campaignName]) {
+                calendarData[topLevelKey].campaigns[campaignName] = {
                     dates: [],
                     cpl: [],
                     leads: [],
@@ -2248,8 +2255,8 @@ function buildChartForArticle(article, periodStart, periodEnd) {
             }
 
             // Создаем структуру группы
-            if (campaignName && groupName && !calendarData[trackerName].campaigns[campaignName].groups[groupName]) {
-                calendarData[trackerName].campaigns[campaignName].groups[groupName] = {
+            if (campaignName && groupName && !calendarData[topLevelKey].campaigns[campaignName].groups[groupName]) {
+                calendarData[topLevelKey].campaigns[campaignName].groups[groupName] = {
                     dates: [],
                     cpl: [],
                     leads: [],
@@ -2259,8 +2266,8 @@ function buildChartForArticle(article, periodStart, periodEnd) {
             }
 
             // Создаем структуру объявления
-            if (campaignName && groupName && adName && !calendarData[trackerName].campaigns[campaignName].groups[groupName].ads[adName]) {
-                calendarData[trackerName].campaigns[campaignName].groups[groupName].ads[adName] = {
+            if (campaignName && groupName && adName && !calendarData[topLevelKey].campaigns[campaignName].groups[groupName].ads[adName]) {
+                calendarData[topLevelKey].campaigns[campaignName].groups[groupName].ads[adName] = {
                     dates: [],
                     cpl: [],
                     leads: [],
@@ -2270,19 +2277,19 @@ function buildChartForArticle(article, periodStart, periodEnd) {
         });
 
         // Заполняем данные по датам
-        Object.keys(calendarData).forEach(trackerName => {
-            const trackerData = calendarData[trackerName];
-            trackerData.dates.sort((a, b) => {
+        Object.keys(calendarData).forEach(videoKey => {
+            const videoData = calendarData[videoKey];
+            videoData.dates.sort((a, b) => {
             const [dayA, monthA, yearA] = a.split('.').map(Number);
             const [dayB, monthB, yearB] = b.split('.').map(Number);
             return yearA - yearB || monthA - monthB || dayA - dayB;
         });
 
-            Object.keys(trackerData.campaigns).forEach(campaignName => {
-                const campaignData = trackerData.campaigns[campaignName];
+            Object.keys(videoData.campaigns).forEach(campaignName => {
+                const campaignData = videoData.campaigns[campaignName];
 
                 // Инициализируем массивы для всех дат
-                trackerData.dates.forEach(date => {
+                videoData.dates.forEach(date => {
                     campaignData.dates.push(date);
                     campaignData.cpl.push(0);
                     campaignData.leads.push(0);
@@ -2292,7 +2299,7 @@ function buildChartForArticle(article, periodStart, periodEnd) {
                 Object.keys(campaignData.groups).forEach(groupName => {
                     const groupData = campaignData.groups[groupName];
 
-                    trackerData.dates.forEach(date => {
+                    videoData.dates.forEach(date => {
                         groupData.dates.push(date);
                         groupData.cpl.push(0);
                         groupData.leads.push(0);
@@ -2302,7 +2309,7 @@ function buildChartForArticle(article, periodStart, periodEnd) {
                     Object.keys(groupData.ads).forEach(adName => {
                         const adData = groupData.ads[adName];
 
-                        trackerData.dates.forEach(date => {
+                        videoData.dates.forEach(date => {
                             adData.dates.push(date);
                             adData.cpl.push(0);
                             adData.leads.push(0);
@@ -2319,6 +2326,7 @@ function buildChartForArticle(article, periodStart, periodEnd) {
             const campaignName = String(row.campaign_name || "").trim();
             const groupName = String(row.adv_group_name || "").trim();
             const adName = String(row.adv_name || "").trim();
+            const videoName = String(row.video_name || "").trim();
             const dateObj = new Date(row.adv_date);
 
             if (isNaN(dateObj.getTime()) || !trackerName.includes(article)) return;
@@ -2328,11 +2336,17 @@ function buildChartForArticle(article, periodStart, periodEnd) {
             const spend = Number(row.cost) || 0;
             const cpl = leads > 0 ? spend / leads : 0;
 
-            if (calendarData[trackerName]) {
-                const dateIndex = calendarData[trackerName].dates.indexOf(dateStr);
+            // Пропускаем записи без названия видео
+            if (!videoName || videoName.trim() === "") return;
 
-                if (dateIndex >= 0 && campaignName && calendarData[trackerName].campaigns[campaignName]) {
-                    const campaignData = calendarData[trackerName].campaigns[campaignName];
+            // Используем только название видео как ключ верхнего уровня
+            const topLevelKey = videoName.trim();
+
+            if (calendarData[topLevelKey]) {
+                const dateIndex = calendarData[topLevelKey].dates.indexOf(dateStr);
+
+                if (dateIndex >= 0 && campaignName && calendarData[topLevelKey].campaigns[campaignName]) {
+                    const campaignData = calendarData[topLevelKey].campaigns[campaignName];
                     campaignData.cpl[dateIndex] += cpl;
                     campaignData.leads[dateIndex] += leads;
                     campaignData.spend[dateIndex] += spend;
