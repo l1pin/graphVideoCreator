@@ -2563,31 +2563,36 @@
               </td>
               ${allDates.map(date => {
                     const dateIndex = videoData.dates.indexOf(date);
-                    let totalLeads = 0, totalSpend = 0;
+                    let totalLeads = 0, totalSpend = 0, totalCTR = 0, totalCPM = 0, ctrCount = 0, cpmCount = 0;
 
                     if (dateIndex >= 0) {
                         Object.values(videoData.campaigns || {}).forEach(campaignData => {
                             totalLeads += campaignData.leads[dateIndex] || 0;
                             totalSpend += campaignData.spend[dateIndex] || 0;
+                            
+                            const dayCTR = campaignData.ctr ? (campaignData.ctr[dateIndex] || 0) : 0;
+                            const dayCPM = campaignData.cpm ? (campaignData.cpm[dateIndex] || 0) : 0;
+                            
+                            if (dayCTR > 0) {
+                                totalCTR += dayCTR;
+                                ctrCount++;
+                            }
+                            if (dayCPM > 0) {
+                                totalCPM += dayCPM;
+                                cpmCount++;
+                            }
                         });
                     }
 
-                    // Расчет дополнительных метрик для видео
-                    let totalCTR = 0, totalCPM = 0, ctrCount = 0, cpmCount = 0;
-                    
-                    if (dateIndex >= 0) {
-                        Object.values(videoData.campaigns || {}).forEach(campaignData => {
-                            // Получаем данные из fbDataMapByBuyerCampaign если они есть
-                            // Пока используем заглушки, т.к. нужен доступ к Facebook метрикам
-                        });
-                    }
+                    const avgCTR = ctrCount > 0 ? totalCTR / ctrCount : 0;
+                    const avgCPM = cpmCount > 0 ? totalCPM / cpmCount : 0;
 
                     return `
                   <td>
                     <div class="calendar-cell ${getCPLStatus(totalLeads, totalSpend)}">
                       <div class="calendar-values">
-                        <div>CTR: ${totalCTR > 0 ? totalCTR.toFixed(2) + '%' : '—'}</div>
-                        <div>CPM: ${totalCPM > 0 ? totalCPM.toFixed(2) : '—'}</div>
+                        <div>CTR: ${avgCTR > 0 ? avgCTR.toFixed(2) + '%' : '—'}</div>
+                        <div>CPM: ${avgCPM > 0 ? avgCPM.toFixed(2) : '—'}</div>
                         <div>CPL: ${formatCPL(totalLeads, totalSpend)}</div>
                         <div>Лиды: ${totalLeads}</div>
                         <div>Расх.: ${formatValue(totalSpend)}</div>
