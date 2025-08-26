@@ -2591,11 +2591,11 @@
                   <td>
                     <div class="calendar-cell ${getCPLStatus(totalLeads, totalSpend)}">
                       <div class="calendar-values">
+                        <div>Лиды: ${totalLeads}</div>
+                        <div>CPL: ${formatCPL(totalLeads, totalSpend)}</div>
+                        <div>Расх.: ${formatValue(totalSpend)}</div>
                         <div>CTR: ${avgCTR > 0 ? avgCTR.toFixed(2) + '%' : '—'}</div>
                         <div>CPM: ${avgCPM > 0 ? avgCPM.toFixed(2) : '—'}</div>
-                        <div>CPL: ${formatCPL(totalLeads, totalSpend)}</div>
-                        <div>Лиды: ${totalLeads}</div>
-                        <div>Расх.: ${formatValue(totalSpend)}</div>
                       </div>
                     </div>
                   </td>
@@ -2628,11 +2628,11 @@
                     <td>
                       <div class="calendar-cell ${getCPLStatus(leads, spend)}">
                         <div class="calendar-values">
+                          <div>Лиды: ${leads}</div>
+                          <div>CPL: ${formatCPL(leads, spend)}</div>
+                          <div>Расх.: ${formatValue(spend)}</div>
                           <div>CTR: —</div>
                           <div>CPM: —</div>
-                          <div>CPL: ${formatCPL(leads, spend)}</div>
-                          <div>Лиды: ${leads}</div>
-                          <div>Расх.: ${formatValue(spend)}</div>
                         </div>
                       </div>
                     </td>
@@ -3874,7 +3874,7 @@
             let html = "<tbody>";
 
             rows.forEach((rowName, index) => {
-            html += `<tr><td class="metric-row" style="min-width: 220px; background-color: #0f172a !important; color: white !important; font-weight: bold; border: 2px solid #334155;">${rowName}</td>`;
+            html += `<tr><td class="metric-row" style="min-width: 220px; background-color: white !important; color: #374151 !important; font-weight: bold; border: 2px solid #e3e3e3; text-align: center;">${rowName}</td>`;
             
             // Первые два столбца - агрегированные данные
             // Обрабатываем данные для каждой строки
@@ -5119,7 +5119,7 @@
             let html = "<tbody>";
 
             rows.forEach((rowName, index) => {
-                html += `<tr><td class="metric-row" style="min-width: 220px; background-color: #0f172a !important; color: white !important; font-weight: bold; border: 2px solid #334155;">${rowName}</td>`;
+                html += `<tr><td class="metric-row" style="min-width: 220px; background-color: white !important; color: #374151 !important; font-weight: bold; border: 2px solid #e3e3e3; text-align: center;">${rowName}</td>`;
                 
                 // Обрабатываем данные для каждой строки
             if (segmentType === "buyer" || segmentType === "creative") {
