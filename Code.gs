@@ -2398,6 +2398,10 @@ function buildChartForArticle(article, periodStart, periodEnd) {
                     cpl: [],
                     leads: [],
                     spend: [],
+                    ctr: [],
+                    cpm: [],
+                    clicks: [],
+                    impressions: [],
                     groups: {}
                 };
             }
@@ -2409,6 +2413,10 @@ function buildChartForArticle(article, periodStart, periodEnd) {
                     cpl: [],
                     leads: [],
                     spend: [],
+                    ctr: [],
+                    cpm: [],
+                    clicks: [],
+                    impressions: [],
                     ads: {}
                 };
             }
@@ -2419,7 +2427,11 @@ function buildChartForArticle(article, periodStart, periodEnd) {
                     dates: [],
                     cpl: [],
                     leads: [],
-                    spend: []
+                    spend: [],
+                    ctr: [],
+                    cpm: [],
+                    clicks: [],
+                    impressions: []
                 };
             }
         });
@@ -2442,6 +2454,10 @@ function buildChartForArticle(article, periodStart, periodEnd) {
                     campaignData.cpl.push(0);
                     campaignData.leads.push(0);
                     campaignData.spend.push(0);
+                    campaignData.ctr.push(0);
+                    campaignData.cpm.push(0);
+                    campaignData.clicks.push(0);
+                    campaignData.impressions.push(0);
                 });
 
                 Object.keys(campaignData.groups).forEach(groupName => {
@@ -2452,6 +2468,10 @@ function buildChartForArticle(article, periodStart, periodEnd) {
                         groupData.cpl.push(0);
                         groupData.leads.push(0);
                         groupData.spend.push(0);
+                        groupData.ctr.push(0);
+                        groupData.cpm.push(0);
+                        groupData.clicks.push(0);
+                        groupData.impressions.push(0);
                     });
 
                     Object.keys(groupData.ads).forEach(adName => {
@@ -2462,6 +2482,10 @@ function buildChartForArticle(article, periodStart, periodEnd) {
                             adData.cpl.push(0);
                             adData.leads.push(0);
                             adData.spend.push(0);
+                            adData.ctr.push(0);
+                            adData.cpm.push(0);
+                            adData.clicks.push(0);
+                            adData.impressions.push(0);
                         });
                     });
                 });
@@ -2484,6 +2508,12 @@ function buildChartForArticle(article, periodStart, periodEnd) {
             const spend = Number(row.cost) || 0;
             const cpl = leads > 0 ? spend / leads : 0;
 
+            // Facebook метрики
+            const ctr = Number(row.ctr) || 0;
+            const cpm = Number(row.cpm) || 0;
+            const clicks = Number(row.clicks_on_link_tracker) || 0;
+            const impressions = cpm > 0 && spend > 0 ? Math.round((spend / cpm) * 1000) : 0;
+
             // Пропускаем записи без названия видео
             if (!videoName || videoName.trim() === "") return;
 
@@ -2498,18 +2528,30 @@ function buildChartForArticle(article, periodStart, periodEnd) {
                     campaignData.cpl[dateIndex] += cpl;
                     campaignData.leads[dateIndex] += leads;
                     campaignData.spend[dateIndex] += spend;
+                    campaignData.ctr[dateIndex] += ctr;
+                    campaignData.cpm[dateIndex] += cpm;
+                    campaignData.clicks[dateIndex] += clicks;
+                    campaignData.impressions[dateIndex] += impressions;
 
                     if (groupName && campaignData.groups[groupName]) {
                         const groupData = campaignData.groups[groupName];
                         groupData.cpl[dateIndex] += cpl;
                         groupData.leads[dateIndex] += leads;
                         groupData.spend[dateIndex] += spend;
+                        groupData.ctr[dateIndex] += ctr;
+                        groupData.cpm[dateIndex] += cpm;
+                        groupData.clicks[dateIndex] += clicks;
+                        groupData.impressions[dateIndex] += impressions;
 
                         if (adName && groupData.ads[adName]) {
                             const adData = groupData.ads[adName];
                             adData.cpl[dateIndex] += cpl;
                             adData.leads[dateIndex] += leads;
                             adData.spend[dateIndex] += spend;
+                            adData.ctr[dateIndex] += ctr;
+                            adData.cpm[dateIndex] += cpm;
+                            adData.clicks[dateIndex] += clicks;
+                            adData.impressions[dateIndex] += impressions;
                         }
                     }
                 }
