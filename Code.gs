@@ -1278,6 +1278,12 @@ function buildChartForArticle(article, periodStart, periodEnd) {
             segmentType
         ) {
             console.log(`🔄 Processing segment: ${segmentName} (${segmentType})`);
+            console.log(`🔍 Segment data check for ${segmentName}:`, {
+                hasResultMap: !!resultMapBySegment[segmentName],
+                resultMapKeys: resultMapBySegment[segmentName] ? Object.keys(resultMapBySegment[segmentName]).length : 0,
+                hasFbDataMap: !!fbDataMapBySegment[segmentName],
+                fbDataMapKeys: fbDataMapBySegment[segmentName] ? Object.keys(fbDataMapBySegment[segmentName]).length : 0
+            });
 
             let segmentMinDate = null,
                 segmentMaxDate = null;
@@ -2062,21 +2068,38 @@ function buildChartForArticle(article, periodStart, periodEnd) {
 
         Object.assign(generalData, newGeneralData);
 
-        // НОВАЯ СТРУКТУРА: Байер → Кампания → Группа → Объявление
-        console.log("🌲 Processing multi-level hierarchy data...");
+        // НОВАЯ СТРУКТУРА: Креатив → Кампания → Группа → Объявление
+        console.log("🌲 Processing multi-level hierarchy data by creatives...");
         const buyerGroupsData = {};
 
-        // Собираем все кампании для каждого байера
-        const buyerCampaignsMap = {}; // { buyer: Set(campaigns) }
-        const campaignGroupsMap = {}; // { "buyer:::campaign": Set(groups) }
-        const groupAdsMap = {}; // { "buyer:::group": Set(ads) }
+        // Собираем все кампании для каждого креатива
+        const creativeCampaignsMap = {}; // { creative: Set(campaigns) }
+        const campaignGroupsMap = {}; // { "creative:::campaign": Set(groups) }
+        const groupAdsMap = {}; // { "creative:::group": Set(ads) }
+
+        // Создаем новые структуры данных для креативов
+        const resultMapByCreative = {};
+        const fbDataMapByCreative = {};
+        const resultMapByCreativeCampaign = {};
+        const fbDataMapByCreativeCampaign = {};
+        const resultMapByCreativeCampaignGroup = {};
+        const fbDataMapByCreativeCampaignGroup = {};
+        const resultMapByCreativeGroupAd = {};
+        const fbDataMapByCreativeGroupAd = {};
 
         allRows.forEach((row) => {
             const trackerName = String(row.campaign_name_tracker || "").trim();
             const campaignName = String(row.campaign_name || "").trim();
             const groupName = String(row.adv_group_name || "").trim();
             const advName = String(row.adv_name || "").trim();
+            const videoName = String(row.video_name || "").trim();
             const groupId = String(row.adv_group_id || "").trim();
+            const dateObj = new Date(row.adv_date);
+
+            if (isNaN(dateObj.getTime()) || !trackerName.includes(article)) return;
+            if (!videoName || videoName.trim() === "") return;
+
+            const dateStr = Utilities.formatDate(dateObj, "Europe/Kiev", "yyyy-MM-dd");
 
             let buyerInfo = null;
             if (trackerName && trackerName.includes(article)) {
@@ -2089,18 +2112,24 @@ function buildChartForArticle(article, periodStart, periodEnd) {
 
             if (!buyerInfo || buyerInfo.article !== article) return;
 
-            if (buyerInfo.buyer && campaignName) {
-                if (!buyerCampaignsMap[buyerInfo.buyer])
-                    buyerCampaignsMap[buyerInfo.buyer] = new Set();
-                buyerCampaignsMap[buyerInfo.buyer].add(campaignName);
+            const leads = Number(row.valid) || 0;
+            const spend = Number(row.cost) || 0;
+            const siteClicks = Number(row.clicks_on_link_tracker) || 0;
+            const hasMetrics = campaignName || groupId;
 
-                const campaignKey = `${buyerInfo.buyer}:::${campaignName}`;
+            // Обработка данных для креатива - собираем связи
+            if (videoName && campaignName) {
+                if (!creativeCampaignsMap[videoName])
+                    creativeCampaignsMap[videoName] = new Set();
+                creativeCampaignsMap[videoName].add(campaignName);
+
+                const campaignKey = `${videoName}:::${campaignName}`;
                 if (groupName) {
                     if (!campaignGroupsMap[campaignKey])
                         campaignGroupsMap[campaignKey] = new Set();
                     campaignGroupsMap[campaignKey].add(groupName);
 
-                    const groupKey = `${buyerInfo.buyer}:::${groupName}`;
+                    const groupKey = `${videoName}:::${groupName}`;
                     if (advName) {
                         if (!groupAdsMap[groupKey])
                             groupAdsMap[groupKey] = new Set();
@@ -2108,73 +2137,181 @@ function buildChartForArticle(article, periodStart, periodEnd) {
                     }
                 }
             }
+
+            // ДАННЫЕ ЛИДОВ И РАСХОДОВ - собираем для всех уровней
+            if (leads > 0 || spend > 0) {
+                console.log(`💰 Processing creative data for: ${videoName}, leads: ${leads}, spend: ${spend}, date: ${dateStr}`);
+
+                // По креативам - ВСЕГДА добавляем данные если есть videoName
+                if (!resultMapByCreative[videoName]) resultMapByCreative[videoName] = {};
+                if (!resultMapByCreative[videoName][dateStr])
+                    resultMapByCreative[videoName][dateStr] = { leads: 0, spend: 0 };
+                resultMapByCreative[videoName][dateStr].leads += leads;
+                resultMapByCreative[videoName][dateStr].spend += spend;
+
+                console.log(`💰 Added to creative ${videoName}: total leads=${resultMapByCreative[videoName][dateStr].leads}, total spend=${resultMapByCreative[videoName][dateStr].spend}`);
+
+                // Креатив → Кампания
+                if (videoName && campaignName) {
+                    const creativeCampaignKey = `${videoName}:::${campaignName}`;
+                    if (!resultMapByCreativeCampaign[creativeCampaignKey])
+                        resultMapByCreativeCampaign[creativeCampaignKey] = {};
+                    if (!resultMapByCreativeCampaign[creativeCampaignKey][dateStr])
+                        resultMapByCreativeCampaign[creativeCampaignKey][dateStr] = {
+                            leads: 0,
+                            spend: 0,
+                        };
+                    resultMapByCreativeCampaign[creativeCampaignKey][dateStr].leads += leads;
+                    resultMapByCreativeCampaign[creativeCampaignKey][dateStr].spend += spend;
+                }
+
+                // Креатив → Кампания → Группа
+                if (videoName && campaignName && groupName) {
+                    const creativeCampaignGroupKey = `${videoName}:::${campaignName}:::${groupName}`;
+                    if (!resultMapByCreativeCampaignGroup[creativeCampaignGroupKey])
+                        resultMapByCreativeCampaignGroup[creativeCampaignGroupKey] = {};
+                    if (!resultMapByCreativeCampaignGroup[creativeCampaignGroupKey][dateStr])
+                        resultMapByCreativeCampaignGroup[creativeCampaignGroupKey][dateStr] = {
+                            leads: 0,
+                            spend: 0,
+                        };
+                    resultMapByCreativeCampaignGroup[creativeCampaignGroupKey][dateStr].leads += leads;
+                    resultMapByCreativeCampaignGroup[creativeCampaignGroupKey][dateStr].spend += spend;
+                }
+
+                // Креатив → Группа → Объявление
+                if (videoName && groupName && advName) {
+                    const creativeGroupAdKey = `${videoName}:::${groupName}:::${advName}`;
+                    if (!resultMapByCreativeGroupAd[creativeGroupAdKey])
+                        resultMapByCreativeGroupAd[creativeGroupAdKey] = {};
+                    if (!resultMapByCreativeGroupAd[creativeGroupAdKey][dateStr])
+                        resultMapByCreativeGroupAd[creativeGroupAdKey][dateStr] = {
+                            leads: 0,
+                            spend: 0,
+                        };
+                    resultMapByCreativeGroupAd[creativeGroupAdKey][dateStr].leads += leads;
+                    resultMapByCreativeGroupAd[creativeGroupAdKey][dateStr].spend += spend;
+                }
+            }
+
+            // FACEBOOK МЕТРИКИ - добавляем для всех уровней если есть метрики
+            if (hasMetrics && (campaignName || groupId)) {
+                console.log(`📘 Processing creative Facebook metrics for: ${videoName}, date: ${dateStr}`);
+
+                function addFacebookMetrics(targetObject, dateKey) {
+                    if (!targetObject[dateKey]) {
+                        targetObject[dateKey] = createFacebookMetricsObject();
+                    }
+                    targetObject[dateKey].adId.push(row.adv_id !== undefined && row.adv_id !== null ? String(row.adv_id) : "");
+                    targetObject[dateKey].freq.push(row.frequency !== undefined && row.frequency !== null ? String(row.frequency) : "");
+                    targetObject[dateKey].ctr.push(row.ctr !== undefined && row.ctr !== null ? String(row.ctr) : "");
+                    targetObject[dateKey].cpm.push(row.cpm !== undefined && row.cpm !== null ? String(row.cpm) : "");
+                    targetObject[dateKey].linkClicks.push(row.clicks_on_link_tracker !== undefined && row.clicks_on_link_tracker !== null ? String(row.clicks_on_link_tracker) : "");
+                    targetObject[dateKey].cpc.push(row.cpc !== undefined && row.cpc !== null ? String(row.cpc) : "");
+                    targetObject[dateKey].avgWatchTime.push(row.average_time_on_video !== undefined && row.average_time_on_video !== null ? String(row.average_time_on_video) : "");
+                    targetObject[dateKey].videoName.push(videoName || "");
+                    targetObject[dateKey].siteUrl.push(String(row.target_url || ""));
+                    targetObject[dateKey].budget.push(row.adv_group_budjet !== undefined && row.adv_group_budjet !== null ? String(row.adv_group_budjet) : "");
+                }
+
+                // ПО КРЕАТИВАМ - ВСЕГДА добавляем если есть videoName
+                if (!fbDataMapByCreative[videoName])
+                    fbDataMapByCreative[videoName] = {};
+                addFacebookMetrics(fbDataMapByCreative[videoName], dateStr);
+
+                console.log(`📘 Added Facebook metrics to creative ${videoName} for date ${dateStr}`);
+
+                // КРЕАТИВ → КАМПАНИЯ
+                if (videoName && campaignName) {
+                    const creativeCampaignKey = `${videoName}:::${campaignName}`;
+                    if (!fbDataMapByCreativeCampaign[creativeCampaignKey])
+                        fbDataMapByCreativeCampaign[creativeCampaignKey] = {};
+                    addFacebookMetrics(fbDataMapByCreativeCampaign[creativeCampaignKey], dateStr);
+                }
+
+                // КРЕАТИВ → КАМПАНИЯ → ГРУППА
+                if (videoName && campaignName && groupName) {
+                    const creativeCampaignGroupKey = `${videoName}:::${campaignName}:::${groupName}`;
+                    if (!fbDataMapByCreativeCampaignGroup[creativeCampaignGroupKey])
+                        fbDataMapByCreativeCampaignGroup[creativeCampaignGroupKey] = {};
+                    addFacebookMetrics(fbDataMapByCreativeCampaignGroup[creativeCampaignGroupKey], dateStr);
+                }
+
+                // КРЕАТИВ → ГРУППА → ОБЪЯВЛЕНИЕ
+                if (videoName && groupName && advName) {
+                    const creativeGroupAdKey = `${videoName}:::${groupName}:::${advName}`;
+                    if (!fbDataMapByCreativeGroupAd[creativeGroupAdKey])
+                        fbDataMapByCreativeGroupAd[creativeGroupAdKey] = {};
+                    addFacebookMetrics(fbDataMapByCreativeGroupAd[creativeGroupAdKey], dateStr);
+                }
+            }
         });
 
-        // Создаем иерархическую структуру
-        Array.from(globalBuyers).forEach((buyerName) => {
-            console.log(`👤 Processing buyer: ${buyerName}`);
+        // Создаем иерархическую структуру по креативам
+        Object.keys(creativeCampaignsMap).forEach((creativeName) => {
+            console.log(`🎬 Processing creative: ${creativeName}`);
 
-            buyerGroupsData[buyerName] = {
+            buyerGroupsData[creativeName] = {
                 buyerData: processSegment(
-                    buyerName,
-                    resultMapByBuyer,
-                    fbDataMapByBuyer,
-                    "buyer"
+                    creativeName,
+                    resultMapByCreative,
+                    fbDataMapByCreative,
+                    "creative"
                 ),
                 campaigns: {},
             };
 
-            // Для каждого байера находим его кампании
-            if (buyerCampaignsMap[buyerName]) {
-                Array.from(buyerCampaignsMap[buyerName]).forEach((campaignName) => {
-                    console.log(`📺 Processing campaign: ${campaignName} for buyer: ${buyerName}`);
+            // Для каждого креатива находим его кампании
+            if (creativeCampaignsMap[creativeName]) {
+                Array.from(creativeCampaignsMap[creativeName]).forEach((campaignName) => {
+                    console.log(`📺 Processing campaign: ${campaignName} for creative: ${creativeName}`);
 
-                    const buyerCampaignKey = `${buyerName}:::${campaignName}`;
+                    const creativeCampaignKey = `${creativeName}:::${campaignName}`;
                     const campaignData = processSegment(
-                        buyerCampaignKey,
-                        resultMapByBuyerCampaign,
-                        fbDataMapByBuyerCampaign,
+                        creativeCampaignKey,
+                        resultMapByCreativeCampaign,
+                        fbDataMapByCreativeCampaign,
                         "campaign"
                     );
 
-                    buyerGroupsData[buyerName].campaigns[campaignName] = {
+                    buyerGroupsData[creativeName].campaigns[campaignName] = {
                         campaignData: campaignData,
                         groups: {}
                     };
 
                     // Для каждой кампании находим её группы
-                    if (campaignGroupsMap[buyerCampaignKey]) {
-                        Array.from(campaignGroupsMap[buyerCampaignKey]).forEach((groupName) => {
+                    if (campaignGroupsMap[creativeCampaignKey]) {
+                        Array.from(campaignGroupsMap[creativeCampaignKey]).forEach((groupName) => {
                             console.log(`📁 Processing group: ${groupName} for campaign: ${campaignName}`);
 
-                            const buyerCampaignGroupKey = `${buyerName}:::${campaignName}:::${groupName}`;
+                            const creativeCampaignGroupKey = `${creativeName}:::${campaignName}:::${groupName}`;
                             const groupData = processSegment(
-                                buyerCampaignGroupKey,
-                                resultMapByBuyerCampaignGroup,
-                                fbDataMapByBuyerCampaignGroup,
+                                creativeCampaignGroupKey,
+                                resultMapByCreativeCampaignGroup,
+                                fbDataMapByCreativeCampaignGroup,
                                 "group"
                             );
 
-                            buyerGroupsData[buyerName].campaigns[campaignName].groups[groupName] = {
+                            buyerGroupsData[creativeName].campaigns[campaignName].groups[groupName] = {
                                 groupData: groupData,
                                 ads: {}
                             };
 
                             // Для каждой группы находим её объявления
-                            const groupKey = `${buyerName}:::${groupName}`;
+                            const groupKey = `${creativeName}:::${groupName}`;
                             if (groupAdsMap[groupKey]) {
                                 Array.from(groupAdsMap[groupKey]).forEach((advName) => {
                                     console.log(`📄 Processing ad: ${advName} for group: ${groupName}`);
 
-                                    const buyerGroupAdKey = `${buyerName}:::${groupName}:::${advName}`;
+                                    const creativeGroupAdKey = `${creativeName}:::${groupName}:::${advName}`;
                                     const adData = processSegment(
-                                        buyerGroupAdKey,
-                                        resultMapByBuyerGroupAd,
-                                        fbDataMapByBuyerGroupAd,
+                                        creativeGroupAdKey,
+                                        resultMapByCreativeGroupAd,
+                                        fbDataMapByCreativeGroupAd,
                                         "ad"
                                     );
 
-                                    buyerGroupsData[buyerName].campaigns[campaignName].groups[groupName].ads[advName] = adData;
+                                    buyerGroupsData[creativeName].campaigns[campaignName].groups[groupName].ads[advName] = adData;
                                 });
                             }
                         });
@@ -2194,6 +2331,17 @@ function buildChartForArticle(article, periodStart, periodEnd) {
                 `  👤 ${buyer}: ${Object.keys(buyerGroupsData[buyer].campaigns || {}).length
                 } campaigns`
             );
+        });
+
+        console.log("🔍 DEBUG: Checking creative data structure:");
+        Object.keys(buyerGroupsData).forEach(creativeName => {
+            console.log(`🔍 Creative: ${creativeName}`);
+            console.log(`🔍 Has buyerData:`, !!buyerGroupsData[creativeName].buyerData);
+            if (buyerGroupsData[creativeName].buyerData) {
+                console.log(`🔍 Data dates:`, buyerGroupsData[creativeName].buyerData.data.dates.length);
+                console.log(`🔍 Leads data:`, buyerGroupsData[creativeName].buyerData.data.leadsDay.slice(0, 5));
+                console.log(`🔍 Spend data:`, buyerGroupsData[creativeName].buyerData.data.spendDay.slice(0, 5));
+            }
         });
 
         // Общие метрики
