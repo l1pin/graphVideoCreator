@@ -742,6 +742,29 @@
             left: 0;
             background: #f8fafc;
             min-width: 220px;
+            z-index: 12;
+            box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .data-table th:nth-child(2) {
+            position: sticky;
+            left: 220px;
+            background: #1b2335;
+            color: white;
+            min-width: 80px;
+            z-index: 11;
+            border: none;
+        }
+
+        .data-table th:nth-child(3) {
+            position: sticky;
+            left: 300px;
+            background: #232a3b;
+            color: white;
+            min-width: 80px;
+            z-index: 11;
+            border: none;
+            box-shadow: 4px 0 8px rgba(0, 0, 0, 0.25);
         }
 
         .data-table td {
@@ -768,10 +791,49 @@
             background: inherit;
             min-width: 220px;
             text-align: left !important;
+            z-index: 10;
+            box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .data-table td:nth-child(2) {
+            position: sticky;
+            left: 220px;
+            background: #1b2335 !important;
+            color: white !important;
+            min-width: 80px;
+            text-align: center !important;
+            font-weight: bold;
+            z-index: 9;
+            border: none !important;
+        }
+
+        .data-table td:nth-child(3) {
+            position: sticky;
+            left: 300px;
+            background: #232a3b !important;
+            color: white !important;
+            min-width: 80px;
+            text-align: center !important;
+            font-weight: bold;
+            z-index: 9;
+            border: none !important;
+            box-shadow: 4px 0 8px rgba(0, 0, 0, 0.25);
         }
 
         .data-table tbody tr:hover {
             background: #f8fafc;
+        }
+
+        .data-table tbody tr:hover td:first-child {
+            background: #f8fafc;
+        }
+
+        .data-table tbody tr:hover td:nth-child(2) {
+            background: #0f1629 !important;
+        }
+
+        .data-table tbody tr:hover td:nth-child(3) {
+            background: #1a202c !important;
         }
 
         .data-table .metric-row {
