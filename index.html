@@ -2685,6 +2685,8 @@
                         const cpl = dateIndex >= 0 ? (campaignData.cpl[dateIndex] || 0) : 0;
                         const leads = dateIndex >= 0 ? (campaignData.leads[dateIndex] || 0) : 0;
                         const spend = dateIndex >= 0 ? (campaignData.spend[dateIndex] || 0) : 0;
+                        const ctr = dateIndex >= 0 ? (campaignData.ctr[dateIndex] || 0) : 0;
+                        const cpm = dateIndex >= 0 ? (campaignData.cpm[dateIndex] || 0) : 0;
 
                         return `
                     <td>
@@ -2693,8 +2695,8 @@
                           <div>Лиды: ${leads}</div>
                           <div>CPL: ${formatCPL(leads, spend)}</div>
                           <div>Расх.: ${formatValue(spend)}</div>
-                          <div>CTR: —</div>
-                          <div>CPM: —</div>
+                          <div>CTR: ${ctr > 0 ? ctr.toFixed(2) + '%' : '—'}</div>
+                          <div>CPM: ${cpm > 0 ? cpm.toFixed(2) : '—'}</div>
                         </div>
                       </div>
                     </td>
@@ -2723,15 +2725,18 @@
                             const leads = dateIndex >= 0 ? (groupData.leads[dateIndex] || 0) : 0;
                             const spend = dateIndex >= 0 ? (groupData.spend[dateIndex] || 0) : 0;
 
+                            const ctr = dateIndex >= 0 ? (groupData.ctr[dateIndex] || 0) : 0;
+                            const cpm = dateIndex >= 0 ? (groupData.cpm[dateIndex] || 0) : 0;
+                            
                             return `
                       <td>
                         <div class="calendar-cell ${getCPLStatus(leads, spend)}">
                           <div class="calendar-values">
-                            <div>CTR: —</div>
-                            <div>CPM: —</div>
-                            <div>CPL: ${formatCPL(leads, spend)}</div>
                             <div>Лиды: ${leads}</div>
+                            <div>CPL: ${formatCPL(leads, spend)}</div>
                             <div>Расх.: ${formatValue(spend)}</div>
+                            <div>CTR: ${ctr > 0 ? ctr.toFixed(2) + '%' : '—'}</div>
+                            <div>CPM: ${cpm > 0 ? cpm.toFixed(2) : '—'}</div>
                           </div>
                         </div>
                       </td>
@@ -2759,15 +2764,18 @@
                                 const leads = dateIndex >= 0 ? (adData.leads[dateIndex] || 0) : 0;
                                 const spend = dateIndex >= 0 ? (adData.spend[dateIndex] || 0) : 0;
 
+                                const ctr = dateIndex >= 0 ? (adData.ctr[dateIndex] || 0) : 0;
+                                const cpm = dateIndex >= 0 ? (adData.cpm[dateIndex] || 0) : 0;
+                                
                                 return `
                         <td>
                           <div class="calendar-cell ${getCPLStatus(leads, spend)}">
                             <div class="calendar-values">
-                              <div>CTR: —</div>
-                              <div>CPM: —</div>
-                              <div>CPL: ${formatCPL(leads, spend)}</div>
                               <div>Лиды: ${leads}</div>
+                              <div>CPL: ${formatCPL(leads, spend)}</div>
                               <div>Расх.: ${formatValue(spend)}</div>
+                              <div>CTR: ${ctr > 0 ? ctr.toFixed(2) + '%' : '—'}</div>
+                              <div>CPM: ${cpm > 0 ? cpm.toFixed(2) : '—'}</div>
                             </div>
                           </div>
                         </td>
