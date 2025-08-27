@@ -2509,10 +2509,10 @@ function buildChartForArticle(article, periodStart, periodEnd) {
             const cpl = leads > 0 ? spend / leads : 0;
 
             // Facebook метрики
-            const ctr = Number(row.ctr) || 0;
-            const cpm = Number(row.cpm) || 0;
-            const clicks = Number(row.clicks_on_link_tracker) || 0;
-            const impressions = cpm > 0 && spend > 0 ? Math.round((spend / cpm) * 1000) : 0;
+                const ctr = parseFloat(String(row.ctr || '0').replace(',', '.')) || 0;
+                const cpm = parseFloat(String(row.cpm || '0').replace(',', '.')) || 0;
+                const clicks = Number(row.clicks_on_link_tracker) || 0;
+                const impressions = cpm > 0 && spend > 0 ? Math.round((spend / cpm) * 1000) : 0;
 
             // Пропускаем записи без названия видео
             if (!videoName || videoName.trim() === "") return;
@@ -2525,33 +2525,36 @@ function buildChartForArticle(article, periodStart, periodEnd) {
 
                 if (dateIndex >= 0 && campaignName && calendarData[topLevelKey].campaigns[campaignName]) {
                     const campaignData = calendarData[topLevelKey].campaigns[campaignName];
-                    campaignData.cpl[dateIndex] += cpl;
                     campaignData.leads[dateIndex] += leads;
                     campaignData.spend[dateIndex] += spend;
-                    campaignData.ctr[dateIndex] += ctr;
-                    campaignData.cpm[dateIndex] += cpm;
+                    if (ctr > 0) campaignData.ctr[dateIndex] = ctr;
+                    if (cpm > 0) campaignData.cpm[dateIndex] = cpm;
                     campaignData.clicks[dateIndex] += clicks;
                     campaignData.impressions[dateIndex] += impressions;
+                    // Пересчитываем CPL для кампании
+                    campaignData.cpl[dateIndex] = campaignData.leads[dateIndex] > 0 ? campaignData.spend[dateIndex] / campaignData.leads[dateIndex] : 0;
 
                     if (groupName && campaignData.groups[groupName]) {
                         const groupData = campaignData.groups[groupName];
-                        groupData.cpl[dateIndex] += cpl;
                         groupData.leads[dateIndex] += leads;
                         groupData.spend[dateIndex] += spend;
-                        groupData.ctr[dateIndex] += ctr;
-                        groupData.cpm[dateIndex] += cpm;
+                        if (ctr > 0) groupData.ctr[dateIndex] = ctr;
+                        if (cpm > 0) groupData.cpm[dateIndex] = cpm;
                         groupData.clicks[dateIndex] += clicks;
                         groupData.impressions[dateIndex] += impressions;
+                        // Пересчитываем CPL для группы
+                        groupData.cpl[dateIndex] = groupData.leads[dateIndex] > 0 ? groupData.spend[dateIndex] / groupData.leads[dateIndex] : 0;
 
                         if (adName && groupData.ads[adName]) {
                             const adData = groupData.ads[adName];
-                            adData.cpl[dateIndex] += cpl;
                             adData.leads[dateIndex] += leads;
                             adData.spend[dateIndex] += spend;
-                            adData.ctr[dateIndex] += ctr;
-                            adData.cpm[dateIndex] += cpm;
+                            if (ctr > 0) adData.ctr[dateIndex] = ctr;
+                            if (cpm > 0) adData.cpm[dateIndex] = cpm;
                             adData.clicks[dateIndex] += clicks;
                             adData.impressions[dateIndex] += impressions;
+                            // Пересчитываем CPL для объявления
+                            adData.cpl[dateIndex] = adData.leads[dateIndex] > 0 ? adData.spend[dateIndex] / adData.leads[dateIndex] : 0;
                         }
                     }
                 }
