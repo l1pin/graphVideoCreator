@@ -1243,6 +1243,45 @@
             font-weight: 500;
         }
 
+        /* Alternating item colors */
+        .even-item {
+            background: rgba(219, 234, 254, 0.9) !important;
+            border: 1px solid rgba(96, 165, 250, 0.3) !important;
+            padding: 3px 6px;
+            border-radius: 6px;
+            margin: 2px 0;
+            display: inline-block;
+            box-shadow: 0 1px 3px rgba(96, 165, 250, 0.1);
+        }
+
+        .odd-item {
+            background: rgba(147, 197, 253, 0.9) !important;
+            border: 1px solid rgba(59, 130, 246, 0.4) !important;
+            padding: 3px 6px;
+            border-radius: 6px;
+            margin: 2px 0;
+            display: inline-block;
+            box-shadow: 0 1px 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .clickable-group.even-item:hover,
+        .clickable-ad.even-item:hover,
+        .clickable-url.even-item:hover {
+            background: rgba(191, 219, 254, 1) !important;
+            border-color: rgba(96, 165, 250, 0.5) !important;
+            box-shadow: 0 2px 6px rgba(96, 165, 250, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .clickable-group.odd-item:hover,
+        .clickable-ad.odd-item:hover,
+        .clickable-url.odd-item:hover {
+            background: rgba(96, 165, 250, 0.9) !important;
+            border-color: rgba(37, 99, 235, 0.6) !important;
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.25);
+            transform: translateY(-1px);
+        }
+
         /* Tooltips */
         .tooltip-container {
             position: relative;
@@ -2255,8 +2294,9 @@
 
             const urls = text.split("\n").filter((url) => url.trim() !== "");
             return urls
-                .map((url) => {
+                .map((url, index) => {
                     const cleanUrl = url.trim();
+                    const alternatingClass = index % 2 === 0 ? 'even-item' : 'odd-item';
                     if (
                         cleanUrl.startsWith("http://") ||
                         cleanUrl.startsWith("https://")
@@ -2264,12 +2304,12 @@
                         try {
                             const urlObj = new URL(cleanUrl);
                             const domain = urlObj.hostname.replace("www.", "");
-                            return `<a href="${cleanUrl}" target="_blank" class="clickable-url" title="${cleanUrl}">${domain}</a>`;
+                            return `<a href="${cleanUrl}" target="_blank" class="clickable-url ${alternatingClass}" title="${cleanUrl}">${domain}</a>`;
                         } catch (e) {
-                            return `<a href="${cleanUrl}" target="_blank" class="clickable-url" title="${cleanUrl}">${cleanUrl}</a>`;
+                            return `<a href="${cleanUrl}" target="_blank" class="clickable-url ${alternatingClass}" title="${cleanUrl}">${cleanUrl}</a>`;
                         }
                     }
-                    return cleanUrl;
+                    return `<span class="${alternatingClass}">${cleanUrl}</span>`;
                 })
                 .join("<br>");
         }
@@ -2282,12 +2322,13 @@
             return groups
                 .map((group, index) => {
                     const trimmedGroup = group.trim();
+                    const alternatingClass = index % 2 === 0 ? 'even-item' : 'odd-item';
                     if (trimmedGroup.length <= 20) {
-                        return `<span class="clickable-group" data-full="${escapeHtml(trimmedGroup)}" data-cell="${cellId}" data-index="${index}">${escapeHtml(trimmedGroup)}</span>`;
+                        return `<span class="clickable-group ${alternatingClass}" data-full="${escapeHtml(trimmedGroup)}" data-cell="${cellId}" data-index="${index}">${escapeHtml(trimmedGroup)}</span>`;
                     }
                     
                     const shortened = trimmedGroup.substring(0, 17) + "...";
-                    return `<span class="clickable-group" data-full="${escapeHtml(trimmedGroup)}" data-cell="${cellId}" data-index="${index}" data-shortened="${escapeHtml(shortened)}">${escapeHtml(shortened)}</span>`;
+                    return `<span class="clickable-group ${alternatingClass}" data-full="${escapeHtml(trimmedGroup)}" data-cell="${cellId}" data-index="${index}" data-shortened="${escapeHtml(shortened)}">${escapeHtml(shortened)}</span>`;
                 })
                 .join("<br>");
         }
@@ -2319,12 +2360,13 @@
             return ads
                 .map((ad, index) => {
                     const trimmedAd = ad.trim();
+                    const alternatingClass = index % 2 === 0 ? 'even-item' : 'odd-item';
                     if (trimmedAd.length <= 25) {
-                        return `<span class="clickable-ad" data-full="${escapeHtml(trimmedAd)}" data-cell="${cellId}" data-index="${index}">${escapeHtml(trimmedAd)}</span>`;
+                        return `<span class="clickable-ad ${alternatingClass}" data-full="${escapeHtml(trimmedAd)}" data-cell="${cellId}" data-index="${index}">${escapeHtml(trimmedAd)}</span>`;
                     }
                     
                     const shortened = trimmedAd.substring(0, 22) + "...";
-                    return `<span class="clickable-ad" data-full="${escapeHtml(trimmedAd)}" data-cell="${cellId}" data-index="${index}" data-shortened="${escapeHtml(shortened)}">${escapeHtml(shortened)}</span>`;
+                    return `<span class="clickable-ad ${alternatingClass}" data-full="${escapeHtml(trimmedAd)}" data-cell="${cellId}" data-index="${index}" data-shortened="${escapeHtml(shortened)}">${escapeHtml(shortened)}</span>`;
                 })
                 .join("<br>");
         }
@@ -3785,13 +3827,13 @@
                 }
             }
 
-            // Расчет средних значений
-            const avgCPL = cplValues.length > 0 ? (cplValues.reduce((a, b) => a + b, 0) / cplValues.length) : 0;
-            const avgConversion = conversionValues.length > 0 ? (conversionValues.reduce((a, b) => a + b, 0) / conversionValues.length) : 0;
-            const avgCTR = ctrValues.length > 0 ? (ctrValues.reduce((a, b) => a + b, 0) / ctrValues.length) : 0;
-            const avgCPM = cpmValues.length > 0 ? (cpmValues.reduce((a, b) => a + b, 0) / cpmValues.length) : 0;
-            const avgCPC = cpcValues.length > 0 ? (cpcValues.reduce((a, b) => a + b, 0) / cpcValues.length) : 0;
-            const avgWatchTime = watchTimeValues.length > 0 ? (watchTimeValues.reduce((a, b) => a + b, 0) / watchTimeValues.length) : 0;
+            // Расчет средних значений и формул
+        const avgCPL = totalLeads > 0 ? (totalSpend / totalLeads) : 0;
+        const avgConversion = totalClicks > 0 ? (totalLeads / totalClicks) * 100 : 0;
+        const avgCTR = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
+        const avgCPM = totalImpressions > 0 ? (totalSpend / totalImpressions) * 1000 : 0;
+        const avgCPC = totalClicks > 0 ? (totalSpend / totalClicks) : 0;
+        const avgWatchTime = watchTimeValues.length > 0 ? (watchTimeValues.reduce((a, b) => a + b, 0) / watchTimeValues.length) : 0;
 
             // Собираем байеров и аккаунты за период
             const periodBuyers = new Set();
@@ -3848,21 +3890,21 @@
             }
 
             return {
-                avgCPL: avgCPL.toFixed(2).replace('.', ','),
-                totalLeads: totalLeads,
-                totalSpend: totalSpend.toFixed(2).replace('.', ','),
-                avgConversion: avgConversion.toFixed(2).replace('.', ',') + '%',
-                avgCTR: avgCTR.toFixed(2).replace('.', ',') + '%',
-                totalImpressions: totalImpressions,
-                avgCPM: avgCPM.toFixed(2).replace('.', ','),
-                totalClicks: totalClicks,
-                avgCPC: avgCPC.toFixed(2).replace('.', ','),
-                avgWatchTime: avgWatchTime.toFixed(2).replace('.', ','),
-                maxCPL: maxCPLValue.toFixed(2).replace('.', ','),
-                rating: rating,
-                buyers: Array.from(periodBuyers).join('\n'),
-                accounts: Array.from(periodAccounts).join('\n')
-            };
+            avgCPL: avgCPL.toFixed(2).replace('.', ','),
+            totalLeads: totalLeads,
+            totalSpend: totalSpend.toFixed(2).replace('.', ','),
+            avgConversion: avgConversion.toFixed(2).replace('.', ',') + '%',
+            avgCTR: avgCTR.toFixed(2).replace('.', ',') + '%',
+            totalImpressions: totalImpressions,
+            avgCPM: avgCPM.toFixed(2).replace('.', ','),
+            totalClicks: totalClicks,
+            avgCPC: avgCPC.toFixed(2).replace('.', ','),
+            avgWatchTime: avgWatchTime.toFixed(2).replace('.', ','),
+            maxCPL: maxCPLValue.toFixed(2).replace('.', ','),
+            rating: rating,
+            buyers: Array.from(periodBuyers).join('\n'),
+            accounts: Array.from(periodAccounts).join('\n')
+        };
         }
 
         // Функция для получения индексов последних 7 активных дней
