@@ -2927,15 +2927,22 @@
                 };
 
                 // Собираем данные трекера по всем кампаниям
-                for (let dateIndex = 0; dateIndex < trackerData.dates.length; dateIndex++) {
-                    let dayLeads = 0, daySpend = 0;
-                    Object.values(trackerData.campaigns || {}).forEach(campaignData => {
-                        dayLeads += campaignData.leads[dateIndex] || 0;
-                        daySpend += campaignData.spend[dateIndex] || 0;
-                    });
-                    trackerDatesData.leadsDay.push(dayLeads);
-                    trackerDatesData.spendDay.push(daySpend);
-                }
+            for (let dateIndex = 0; dateIndex < trackerData.dates.length; dateIndex++) {
+                let dayLeads = 0, daySpend = 0, dayClicks = 0, dayImpressions = 0;
+                Object.values(trackerData.campaigns || {}).forEach(campaignData => {
+                    dayLeads += campaignData.leads[dateIndex] || 0;
+                    daySpend += campaignData.spend[dateIndex] || 0;
+                    dayClicks += campaignData.clicks[dateIndex] || 0;
+                    dayImpressions += campaignData.impressions[dateIndex] || 0;
+                });
+                trackerDatesData.leadsDay.push(dayLeads);
+                trackerDatesData.spendDay.push(daySpend);
+                // Добавляем поля для расчета CTR, CPC, CPM
+                if (!trackerDatesData.linkClicks) trackerDatesData.linkClicks = [];
+                if (!trackerDatesData.impressions) trackerDatesData.impressions = [];
+                trackerDatesData.linkClicks.push(dayClicks.toString());
+                trackerDatesData.impressions.push(dayImpressions.toString());
+            }
 
                 const userStartDate = document.getElementById("periodStart").value;
                 const userEndDate = document.getElementById("periodEnd").value;
@@ -3013,7 +3020,9 @@
                     const campaignDatesData = {
                         dates: campaignData.dates,
                         leadsDay: campaignData.leads,
-                        spendDay: campaignData.spend
+                        spendDay: campaignData.spend,
+                        linkClicks: campaignData.clicks ? campaignData.clicks.map(c => c.toString()) : [],
+                        impressions: campaignData.impressions ? campaignData.impressions.map(i => i.toString()) : []
                     };
 
                     const campaignLast7DaysIndices = getLast7ActiveDaysIndices(campaignDatesData);
@@ -3058,6 +3067,12 @@
                         const cpl = dateIndex >= 0 ? (campaignData.cpl[dateIndex] || 0) : 0;
                         const leads = dateIndex >= 0 ? (campaignData.leads[dateIndex] || 0) : 0;
                         const spend = dateIndex >= 0 ? (campaignData.spend[dateIndex] || 0) : 0;
+                        const clicks = dateIndex >= 0 ? (campaignData.clicks[dateIndex] || 0) : 0;
+                        const impressions = dateIndex >= 0 ? (campaignData.impressions[dateIndex] || 0) : 0;
+                        
+                        const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) + '%' : '0,00%';
+                        const cpc = clicks > 0 ? (spend / clicks).toFixed(2) : '0,00';
+                        const cpm = impressions > 0 ? ((spend / impressions) * 1000).toFixed(2) : '0,00';
 
                         return `
                     <td>
@@ -3065,6 +3080,9 @@
                         <div class="calendar-metric">Лиды: ${leads}</div>
                         <div class="calendar-metric">CPL: ${formatCPL(leads, spend)}</div>
                         <div class="calendar-metric">Расх.: ${formatValue(spend)}</div>
+                        <div class="calendar-metric">CTR: ${ctr}</div>
+                        <div class="calendar-metric">CPC: ${cpc}</div>
+                        <div class="calendar-metric">CPM: ${cpm}</div>
                       </div>
                     </td>
                   `;
@@ -3079,7 +3097,9 @@
                         const groupDatesData = {
                             dates: groupData.dates,
                             leadsDay: groupData.leads,
-                            spendDay: groupData.spend
+                            spendDay: groupData.spend,
+                            linkClicks: groupData.clicks ? groupData.clicks.map(c => c.toString()) : [],
+                            impressions: groupData.impressions ? groupData.impressions.map(i => i.toString()) : []
                         };
 
                         const groupLast7DaysIndices = getLast7ActiveDaysIndices(groupDatesData);
@@ -3124,6 +3144,12 @@
                             const cpl = dateIndex >= 0 ? (groupData.cpl[dateIndex] || 0) : 0;
                             const leads = dateIndex >= 0 ? (groupData.leads[dateIndex] || 0) : 0;
                             const spend = dateIndex >= 0 ? (groupData.spend[dateIndex] || 0) : 0;
+                            const clicks = dateIndex >= 0 ? (groupData.clicks[dateIndex] || 0) : 0;
+                            const impressions = dateIndex >= 0 ? (groupData.impressions[dateIndex] || 0) : 0;
+                            
+                            const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) + '%' : '0,00%';
+                            const cpc = clicks > 0 ? (spend / clicks).toFixed(2) : '0,00';
+                            const cpm = impressions > 0 ? ((spend / impressions) * 1000).toFixed(2) : '0,00';
 
                             return `
                       <td>
@@ -3131,6 +3157,9 @@
                           <div class="calendar-metric">Лиды: ${leads}</div>
                           <div class="calendar-metric">CPL: ${formatCPL(leads, spend)}</div>
                           <div class="calendar-metric">Расх.: ${formatValue(spend)}</div>
+                          <div class="calendar-metric">CTR: ${ctr}</div>
+                          <div class="calendar-metric">CPC: ${cpc}</div>
+                          <div class="calendar-metric">CPM: ${cpm}</div>
                         </div>
                       </td>
                     `;
@@ -3142,9 +3171,11 @@
 
                             // Расчет агрегированных метрик для объявления
                             const adDatesData = {
-                                dates: adData.dates,
-                                leadsDay: adData.leads,
-                                spendDay: adData.spend
+                                dates: groupData.ads[adName].dates,
+                                leadsDay: groupData.ads[adName].leads,
+                                spendDay: groupData.ads[adName].spend,
+                                linkClicks: groupData.ads[adName].clicks ? groupData.ads[adName].clicks.map(c => c.toString()) : [],
+                                impressions: groupData.ads[adName].impressions ? groupData.ads[adName].impressions.map(i => i.toString()) : []
                             };
 
                             const adLast7DaysIndices = getLast7ActiveDaysIndices(adDatesData);
@@ -3189,6 +3220,12 @@
                                 const cpl = dateIndex >= 0 ? (adData.cpl[dateIndex] || 0) : 0;
                                 const leads = dateIndex >= 0 ? (adData.leads[dateIndex] || 0) : 0;
                                 const spend = dateIndex >= 0 ? (adData.spend[dateIndex] || 0) : 0;
+                                const clicks = dateIndex >= 0 ? (adData.clicks[dateIndex] || 0) : 0;
+                                const impressions = dateIndex >= 0 ? (adData.impressions[dateIndex] || 0) : 0;
+                                
+                                const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) + '%' : '0,00%';
+                                const cpc = clicks > 0 ? (spend / clicks).toFixed(2) : '0,00';
+                                const cpm = impressions > 0 ? ((spend / impressions) * 1000).toFixed(2) : '0,00';
 
                                 return `
                         <td>
@@ -3196,6 +3233,9 @@
                             <div class="calendar-metric">Лиды: ${leads}</div>
                             <div class="calendar-metric">CPL: ${formatCPL(leads, spend)}</div>
                             <div class="calendar-metric">Расх.: ${formatValue(spend)}</div>
+                            <div class="calendar-metric">CTR: ${ctr}</div>
+                            <div class="calendar-metric">CPC: ${cpc}</div>
+                            <div class="calendar-metric">CPM: ${cpm}</div>
                           </div>
                         </td>
                       `;
@@ -3508,13 +3548,27 @@
 
                 // Собираем данные трекера по всем кампаниям
                 for (let dateIndex = 0; dateIndex < trackerData.dates.length; dateIndex++) {
-                    let dayLeads = 0, daySpend = 0;
+                    let dayLeads = 0, daySpend = 0, dayClicks = 0, dayImpressions = 0;
                     Object.values(trackerData.campaigns || {}).forEach(campaignData => {
                         dayLeads += campaignData.leads[dateIndex] || 0;
                         daySpend += campaignData.spend[dateIndex] || 0;
+                        dayClicks += campaignData.clicks[dateIndex] || 0;
+                        dayImpressions += campaignData.impressions[dateIndex] || 0;
                     });
                     trackerDatesData.leadsDay.push(dayLeads);
                     trackerDatesData.spendDay.push(daySpend);
+                }
+                // Добавляем поля для расчета CTR, CPC, CPM
+                trackerDatesData.linkClicks = [];
+                trackerDatesData.impressions = [];
+                for (let dateIndex = 0; dateIndex < trackerData.dates.length; dateIndex++) {
+                    let dayClicks = 0, dayImpressions = 0;
+                    Object.values(trackerData.campaigns || {}).forEach(campaignData => {
+                        dayClicks += campaignData.clicks[dateIndex] || 0;
+                        dayImpressions += campaignData.impressions[dateIndex] || 0;
+                    });
+                    trackerDatesData.linkClicks.push(dayClicks.toString());
+                    trackerDatesData.impressions.push(dayImpressions.toString());
                 }
 
                 const trackerPeriodMetrics = calculateAggregatedMetrics(trackerDatesData, 0, trackerDatesData.dates.length - 1, userStartDate, userEndDate);
@@ -3546,7 +3600,9 @@
                     const campaignDatesData = {
                         dates: campaignData.dates,
                         leadsDay: campaignData.leads,
-                        spendDay: campaignData.spend
+                        spendDay: campaignData.spend,
+                        linkClicks: campaignData.clicks ? campaignData.clicks.map(c => c.toString()) : [],
+                        impressions: campaignData.impressions ? campaignData.impressions.map(i => i.toString()) : []
                     };
 
                     const campaignPeriodMetrics = calculateAggregatedMetrics(campaignDatesData, 0, campaignDatesData.dates.length - 1, userStartDate, userEndDate);
@@ -3578,7 +3634,9 @@
                         const groupDatesData = {
                             dates: groupData.dates,
                             leadsDay: groupData.leads,
-                            spendDay: groupData.spend
+                            spendDay: groupData.spend,
+                            linkClicks: groupData.clicks ? groupData.clicks.map(c => c.toString()) : [],
+                            impressions: groupData.impressions ? groupData.impressions.map(i => i.toString()) : []
                         };
 
                         const groupPeriodMetrics = calculateAggregatedMetrics(groupDatesData, 0, groupDatesData.dates.length - 1, userStartDate, userEndDate);
@@ -3608,7 +3666,9 @@
                             const adDatesData = {
                                 dates: groupData.ads[adName].dates,
                                 leadsDay: groupData.ads[adName].leads,
-                                spendDay: groupData.ads[adName].spend
+                                spendDay: groupData.ads[adName].spend,
+                                linkClicks: groupData.ads[adName].clicks ? groupData.ads[adName].clicks.map(c => c.toString()) : [],
+                                impressions: groupData.ads[adName].impressions ? groupData.ads[adName].impressions.map(i => i.toString()) : []
                             };
 
                             const adPeriodMetrics = calculateAggregatedMetrics(adDatesData, 0, adDatesData.dates.length - 1, userStartDate, userEndDate);
