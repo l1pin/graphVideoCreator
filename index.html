@@ -6745,10 +6745,43 @@
                 if (nameCell) {
                     const cellText = nameCell.textContent.replace(/^[\u{1F4CA}\u{1F4F1}\u{1F4C1}\u{1F4C4}�📊📱📁📄]\s*/u, '').trim();
                     
+                    // Функция для сравнения имен с учетом отображаемых имен
+                    function matchesElement(displayedName, searchName, rowLevel) {
+                        // Прямое совпадение
+                        if (displayedName === searchName) return true;
+                        
+                        // Для трекеров: отображаемое имя может быть названием видео
+                        if (rowLevel === 'lvl0' && elementType === 'tracker') {
+                            // Проверяем, содержится ли искомое имя в полном имени трекера
+                            // Или отображаемое имя является видео из этого трекера
+                            if (window.currentCalendarData && window.currentCalendarData[searchName]) {
+                                const trackerData = window.currentCalendarData[searchName];
+                                // Проверяем, является ли отображаемое имя видео из этого трекера
+                                for (let campaignName of Object.keys(trackerData.campaigns || {})) {
+                                    const campaignData = trackerData.campaigns[campaignName];
+                                    if (campaignData.videoNames) {
+                                        const videoName = campaignData.videoNames.find(name => name && name.trim() !== '');
+                                        if (videoName && videoName.trim() === displayedName) {
+                                            return true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        return false;
+                    }
+                    
+                    // Определяем уровень строки
+                    let rowLevel = 'lvl0';
+                    if (row.classList.contains('lvl1')) rowLevel = 'lvl1';
+                    else if (row.classList.contains('lvl2')) rowLevel = 'lvl2';
+                    else if (row.classList.contains('lvl3')) rowLevel = 'lvl3';
+                    
                     // Если указан трекер, ищем в контексте конкретного трекера
                     if (trackerName && elementType === 'campaign') {
                         // Ищем кампанию в нужном трекере
-                        if (cellText === elementName) {
+                        if (matchesElement(cellText, elementName, rowLevel)) {
                             // Проверяем, что это дочерний элемент нужного трекера
                             const trackerRow = findTrackerRow(trackerName, rows);
                             if (trackerRow && isChildOfTracker(row, trackerRow)) {
@@ -6758,7 +6791,7 @@
                         }
                     } else if (trackerName && campaignName && elementType === 'group') {
                         // Ищем группу в нужной кампании нужного трекера
-                        if (cellText === elementName) {
+                        if (matchesElement(cellText, elementName, rowLevel)) {
                             const campaignRow = findCampaignInTracker(campaignName, trackerName, rows);
                             if (campaignRow && isChildOfCampaign(row, campaignRow)) {
                                 targetRow = row;
@@ -6767,7 +6800,7 @@
                         }
                     } else if (trackerName && campaignName && groupName && elementType === 'ad') {
                         // Ищем объявление в нужной группе
-                        if (cellText === elementName) {
+                        if (matchesElement(cellText, elementName, rowLevel)) {
                             const groupRow = findGroupInCampaign(groupName, campaignName, trackerName, rows);
                             if (groupRow && isChildOfGroup(row, groupRow)) {
                                 targetRow = row;
@@ -6776,7 +6809,7 @@
                         }
                     } else {
                         // Обычный поиск для трекеров
-                        if (cellText === elementName) {
+                        if (matchesElement(cellText, elementName, rowLevel)) {
                             targetRow = row;
                             console.log('✅ Found target row:', targetRow);
                         }
@@ -6820,8 +6853,26 @@
                 const nameCell = row.querySelector('td:first-child .calendar-name');
                 if (nameCell) {
                     const cellText = nameCell.textContent.replace(/^[\u{1F4CA}\u{1F4F1}\u{1F4C1}\u{1F4C4}�📊📱📁📄]\s*/u, '').trim();
-                    if (cellText === trackerName && row.classList.contains('lvl0')) {
-                        return row;
+                    
+                    // Для трекеров проверяем как прямое совпадение, так и соответствие через видео
+                    if (row.classList.contains('lvl0')) {
+                        if (cellText === trackerName) {
+                            return row;
+                        }
+                        
+                        // Проверяем через календарные данные
+                        if (window.currentCalendarData && window.currentCalendarData[trackerName]) {
+                            const trackerData = window.currentCalendarData[trackerName];
+                            for (let campaignName of Object.keys(trackerData.campaigns || {})) {
+                                const campaignData = trackerData.campaigns[campaignName];
+                                if (campaignData.videoNames) {
+                                    const videoName = campaignData.videoNames.find(name => name && name.trim() !== '');
+                                    if (videoName && videoName.trim() === cellText) {
+                                        return row;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
