@@ -2874,6 +2874,31 @@
                 return value > 0 ? value.toFixed(2) : '—';
             }
 
+            function formatCTR(leads, spend, dateIndex, trackerData) {
+                let totalClicks = 0, totalImpressions = 0;
+                Object.values(trackerData.campaigns || {}).forEach(campaignData => {
+                    totalClicks += campaignData.clicks ? (campaignData.clicks[dateIndex] || 0) : 0;
+                    totalImpressions += campaignData.impressions ? (campaignData.impressions[dateIndex] || 0) : 0;
+                });
+                return totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) + '%' : '—';
+            }
+
+            function formatCPC(leads, spend, dateIndex, trackerData) {
+                let totalClicks = 0;
+                Object.values(trackerData.campaigns || {}).forEach(campaignData => {
+                    totalClicks += campaignData.clicks ? (campaignData.clicks[dateIndex] || 0) : 0;
+                });
+                return totalClicks > 0 ? (spend / totalClicks).toFixed(2) : '—';
+            }
+
+            function formatCPM(leads, spend, dateIndex, trackerData) {
+                let totalImpressions = 0;
+                Object.values(trackerData.campaigns || {}).forEach(campaignData => {
+                    totalImpressions += campaignData.impressions ? (campaignData.impressions[dateIndex] || 0) : 0;
+                });
+                return totalImpressions > 0 ? ((spend / totalImpressions) * 1000).toFixed(2) : '—';
+            }
+
             let html = `
           <div class="calendar-container">
             <table class="calendar-table">
@@ -2931,19 +2956,25 @@
                 </div>
               </td>
               <td style="padding: 0;">
-                <div class="calendar-cell" style="background-color: #1b2335 !important; border-color: #334155 !important; color: white !important; margin: 2px;">
-                  <div class="calendar-metric" style="color: white !important;">Лиды: ${trackerPeriodMetrics.totalLeads}</div>
-                  <div class="calendar-metric" style="color: white !important;">CPL: ${trackerPeriodMetrics.avgCPL}</div>
-                  <div class="calendar-metric" style="color: white !important;">Расх.: ${trackerPeriodMetrics.totalSpend}</div>
-                </div>
-              </td>
-              <td style="padding: 0;">
-                <div class="calendar-cell" style="background-color: #232a3b !important; border-color: #334155 !important; color: white !important; margin: 2px;">
-                  <div class="calendar-metric" style="color: white !important;">Лиды: ${trackerLast7DaysMetrics.totalLeads}</div>
-                  <div class="calendar-metric" style="color: white !important;">CPL: ${trackerLast7DaysMetrics.avgCPL}</div>
-                  <div class="calendar-metric" style="color: white !important;">Расх.: ${trackerLast7DaysMetrics.totalSpend}</div>
-                </div>
-              </td>
+                    <div class="calendar-cell" style="background-color: #3b82f6 !important; border-color: #2563eb !important; color: white !important; margin: 2px;">
+                      <div class="calendar-metric" style="color: white !important;">Лиды: ${trackerPeriodMetrics.totalLeads}</div>
+                      <div class="calendar-metric" style="color: white !important;">CPL: ${trackerPeriodMetrics.avgCPL}</div>
+                      <div class="calendar-metric" style="color: white !important;">Расх.: ${trackerPeriodMetrics.totalSpend}</div>
+                      <div class="calendar-metric" style="color: white !important;">CTR: ${trackerPeriodMetrics.avgCTR}</div>
+                      <div class="calendar-metric" style="color: white !important;">CPC: ${trackerPeriodMetrics.avgCPC}</div>
+                      <div class="calendar-metric" style="color: white !important;">CPM: ${trackerPeriodMetrics.avgCPM}</div>
+                    </div>
+                  </td>
+                  <td style="padding: 0;">
+                    <div class="calendar-cell" style="background-color: #3b82f6 !important; border-color: #2563eb !important; color: white !important; margin: 2px;">
+                      <div class="calendar-metric" style="color: white !important;">Лиды: ${trackerLast7DaysMetrics.totalLeads}</div>
+                      <div class="calendar-metric" style="color: white !important;">CPL: ${trackerLast7DaysMetrics.avgCPL}</div>
+                      <div class="calendar-metric" style="color: white !important;">Расх.: ${trackerLast7DaysMetrics.totalSpend}</div>
+                      <div class="calendar-metric" style="color: white !important;">CTR: ${trackerLast7DaysMetrics.avgCTR}</div>
+                      <div class="calendar-metric" style="color: white !important;">CPC: ${trackerLast7DaysMetrics.avgCPC}</div>
+                      <div class="calendar-metric" style="color: white !important;">CPM: ${trackerLast7DaysMetrics.avgCPM}</div>
+                    </div>
+                  </td>
               ${allDates.map(date => {
                     const dateIndex = trackerData.dates.indexOf(date);
                     let totalLeads = 0, totalSpend = 0;
@@ -2957,11 +2988,14 @@
 
                     return `
                   <td>
-                    <div class="calendar-cell ${getCPLStatus(totalLeads, totalSpend, maxCPLThreshold)}">
-                      <div class="calendar-metric">Лиды: ${totalLeads}</div>
-                      <div class="calendar-metric">CPL: ${formatCPL(totalLeads, totalSpend)}</div>
-                      <div class="calendar-metric">Расх.: ${formatValue(totalSpend)}</div>
-                    </div>
+                    <div class="calendar-cell" style="background-color: #3b82f6 !important; border-color: #2563eb !important; color: white !important;">
+                        <div class="calendar-metric" style="color: white !important;">Лиды: ${totalLeads}</div>
+                        <div class="calendar-metric" style="color: white !important;">CPL: ${formatCPL(totalLeads, totalSpend)}</div>
+                        <div class="calendar-metric" style="color: white !important;">Расх.: ${formatValue(totalSpend)}</div>
+                        <div class="calendar-metric" style="color: white !important;">CTR: ${formatCTR(totalLeads, totalSpend, dateIndex, trackerData)}</div>
+                        <div class="calendar-metric" style="color: white !important;">CPC: ${formatCPC(totalLeads, totalSpend, dateIndex, trackerData)}</div>
+                        <div class="calendar-metric" style="color: white !important;">CPM: ${formatCPM(totalLeads, totalSpend, dateIndex, trackerData)}</div>
+                      </div>
                   </td>
                 `;
                 }).join('')}
@@ -2996,19 +3030,25 @@
                   </div>
                 </td>
                 <td style="padding: 0;">
-                  <div class="calendar-cell" style="background-color: #1b2335 !important; border-color: #334155 !important; color: white !important; margin: 2px;">
-                    <div class="calendar-metric" style="color: white !important;">Лиды: ${campaignPeriodMetrics.totalLeads}</div>
-                    <div class="calendar-metric" style="color: white !important;">CPL: ${campaignPeriodMetrics.avgCPL}</div>
-                    <div class="calendar-metric" style="color: white !important;">Расх.: ${campaignPeriodMetrics.totalSpend}</div>
-                  </div>
-                </td>
-                <td style="padding: 0;">
-                  <div class="calendar-cell" style="background-color: #232a3b !important; border-color: #334155 !important; color: white !important; margin: 2px;">
-                    <div class="calendar-metric" style="color: white !important;">Лиды: ${campaignLast7DaysMetrics.totalLeads}</div>
-                    <div class="calendar-metric" style="color: white !important;">CPL: ${campaignLast7DaysMetrics.avgCPL}</div>
-                    <div class="calendar-metric" style="color: white !important;">Расх.: ${campaignLast7DaysMetrics.totalSpend}</div>
-                  </div>
-                </td>
+                    <div class="calendar-cell" style="background-color: #3b82f6 !important; border-color: #2563eb !important; color: white !important; margin: 2px;">
+                      <div class="calendar-metric" style="color: white !important;">Лиды: ${campaignPeriodMetrics.totalLeads}</div>
+                      <div class="calendar-metric" style="color: white !important;">CPL: ${campaignPeriodMetrics.avgCPL}</div>
+                      <div class="calendar-metric" style="color: white !important;">Расх.: ${campaignPeriodMetrics.totalSpend}</div>
+                      <div class="calendar-metric" style="color: white !important;">CTR: ${campaignPeriodMetrics.avgCTR}</div>
+                      <div class="calendar-metric" style="color: white !important;">CPC: ${campaignPeriodMetrics.avgCPC}</div>
+                      <div class="calendar-metric" style="color: white !important;">CPM: ${campaignPeriodMetrics.avgCPM}</div>
+                    </div>
+                  </td>
+                  <td style="padding: 0;">
+                    <div class="calendar-cell" style="background-color: #3b82f6 !important; border-color: #2563eb !important; color: white !important; margin: 2px;">
+                      <div class="calendar-metric" style="color: white !important;">Лиды: ${campaignLast7DaysMetrics.totalLeads}</div>
+                      <div class="calendar-metric" style="color: white !important;">CPL: ${campaignLast7DaysMetrics.avgCPL}</div>
+                      <div class="calendar-metric" style="color: white !important;">Расх.: ${campaignLast7DaysMetrics.totalSpend}</div>
+                      <div class="calendar-metric" style="color: white !important;">CTR: ${campaignLast7DaysMetrics.avgCTR}</div>
+                      <div class="calendar-metric" style="color: white !important;">CPC: ${campaignLast7DaysMetrics.avgCPC}</div>
+                      <div class="calendar-metric" style="color: white !important;">CPM: ${campaignLast7DaysMetrics.avgCPM}</div>
+                    </div>
+                  </td>
                 ${allDates.map(date => {
                         const dateIndex = trackerData.dates.indexOf(date);
                         const cpl = dateIndex >= 0 ? (campaignData.cpl[dateIndex] || 0) : 0;
@@ -3056,17 +3096,23 @@
                     </div>
                   </td>
                   <td style="padding: 0;">
-                    <div class="calendar-cell" style="background-color: #1b2335 !important; border-color: #334155 !important; color: white !important; margin: 2px;">
+                    <div class="calendar-cell" style="background-color: #3b82f6 !important; border-color: #2563eb !important; color: white !important; margin: 2px;">
                       <div class="calendar-metric" style="color: white !important;">Лиды: ${groupPeriodMetrics.totalLeads}</div>
                       <div class="calendar-metric" style="color: white !important;">CPL: ${groupPeriodMetrics.avgCPL}</div>
                       <div class="calendar-metric" style="color: white !important;">Расх.: ${groupPeriodMetrics.totalSpend}</div>
+                      <div class="calendar-metric" style="color: white !important;">CTR: ${groupPeriodMetrics.avgCTR}</div>
+                      <div class="calendar-metric" style="color: white !important;">CPC: ${groupPeriodMetrics.avgCPC}</div>
+                      <div class="calendar-metric" style="color: white !important;">CPM: ${groupPeriodMetrics.avgCPM}</div>
                     </div>
                   </td>
                   <td style="padding: 0;">
-                    <div class="calendar-cell" style="background-color: #232a3b !important; border-color: #334155 !important; color: white !important; margin: 2px;">
+                    <div class="calendar-cell" style="background-color: #3b82f6 !important; border-color: #2563eb !important; color: white !important; margin: 2px;">
                       <div class="calendar-metric" style="color: white !important;">Лиды: ${groupLast7DaysMetrics.totalLeads}</div>
                       <div class="calendar-metric" style="color: white !important;">CPL: ${groupLast7DaysMetrics.avgCPL}</div>
                       <div class="calendar-metric" style="color: white !important;">Расх.: ${groupLast7DaysMetrics.totalSpend}</div>
+                      <div class="calendar-metric" style="color: white !important;">CTR: ${groupLast7DaysMetrics.avgCTR}</div>
+                      <div class="calendar-metric" style="color: white !important;">CPC: ${groupLast7DaysMetrics.avgCPC}</div>
+                      <div class="calendar-metric" style="color: white !important;">CPM: ${groupLast7DaysMetrics.avgCPM}</div>
                     </div>
                   </td>
                   ${allDates.map(date => {
@@ -3115,17 +3161,23 @@
                       </div>
                     </td>
                     <td style="padding: 0;">
-                      <div class="calendar-cell" style="background-color: #1b2335 !important; border-color: #334155 !important; color: white !important; margin: 2px;">
+                      <div class="calendar-cell" style="background-color: #3b82f6 !important; border-color: #2563eb !important; color: white !important; margin: 2px;">
                         <div class="calendar-metric" style="color: white !important;">Лиды: ${adPeriodMetrics.totalLeads}</div>
                         <div class="calendar-metric" style="color: white !important;">CPL: ${adPeriodMetrics.avgCPL}</div>
                         <div class="calendar-metric" style="color: white !important;">Расх.: ${adPeriodMetrics.totalSpend}</div>
+                        <div class="calendar-metric" style="color: white !important;">CTR: ${adPeriodMetrics.avgCTR}</div>
+                        <div class="calendar-metric" style="color: white !important;">CPC: ${adPeriodMetrics.avgCPC}</div>
+                        <div class="calendar-metric" style="color: white !important;">CPM: ${adPeriodMetrics.avgCPM}</div>
                       </div>
                     </td>
                     <td style="padding: 0;">
-                      <div class="calendar-cell" style="background-color: #232a3b !important; border-color: #334155 !important; color: white !important; margin: 2px;">
+                      <div class="calendar-cell" style="background-color: #3b82f6 !important; border-color: #2563eb !important; color: white !important; margin: 2px;">
                         <div class="calendar-metric" style="color: white !important;">Лиды: ${adLast7DaysMetrics.totalLeads}</div>
                         <div class="calendar-metric" style="color: white !important;">CPL: ${adLast7DaysMetrics.avgCPL}</div>
                         <div class="calendar-metric" style="color: white !important;">Расх.: ${adLast7DaysMetrics.totalSpend}</div>
+                        <div class="calendar-metric" style="color: white !important;">CTR: ${adLast7DaysMetrics.avgCTR}</div>
+                        <div class="calendar-metric" style="color: white !important;">CPC: ${adLast7DaysMetrics.avgCPC}</div>
+                        <div class="calendar-metric" style="color: white !important;">CPM: ${adLast7DaysMetrics.avgCPM}</div>
                       </div>
                     </td>
                     ${allDates.map(date => {
