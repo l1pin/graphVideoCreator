@@ -1673,11 +1673,13 @@
         }
 
         .calendar-muted {
-            opacity: 0.5;
+            background: #f8fafc !important;
+            border-color: #e2e8f0 !important;
+            color: #9ca3af !important;
         }
 
         .calendar-muted .calendar-metric {
-            color: #9ca3af;
+            color: #9ca3af !important;
         }
 
         /* Level styling */
@@ -1719,47 +1721,47 @@
 
         /* Status colors */
         .calendar-excellent {
-            background: #dcfce7 !important;
-            border-color: #16a34a !important;
-            color: #166534 !important;
+            background: #dbeafe !important;
+            border-color: #60a5fa !important;
+            color: #1e40af !important;
             font-weight: 600;
         }
 
         .calendar-excellent .calendar-metric {
-            color: #166534 !important;
+            color: #1e40af !important;
         }
 
         .calendar-good {
-            background: #fef3c7 !important;
-            border-color: #d97706 !important;
-            color: #a16207 !important;
+            background: #dbeafe !important;
+            border-color: #60a5fa !important;
+            color: #1e40af !important;
             font-weight: 600;
         }
 
         .calendar-good .calendar-metric {
-            color: #a16207 !important;
+            color: #1e40af !important;
         }
 
         .calendar-warning {
-            background: #fed7aa !important;
-            border-color: #ea580c !important;
-            color: #c2410c !important;
+            background: #dbeafe !important;
+            border-color: #60a5fa !important;
+            color: #1e40af !important;
             font-weight: 600;
         }
 
         .calendar-warning .calendar-metric {
-            color: #c2410c !important;
+            color: #1e40af !important;
         }
 
         .calendar-danger {
-            background: #fecaca !important;
-            border-color: #ef4444 !important;
-            color: #dc2626 !important;
+            background: #dbeafe !important;
+            border-color: #60a5fa !important;
+            color: #1e40af !important;
             font-weight: 600;
         }
 
         .calendar-danger .calendar-metric {
-            color: #dc2626 !important;
+            color: #1e40af !important;
         }
 
         .calendar-child {
@@ -2956,7 +2958,7 @@
                 </div>
               </td>
               <td style="padding: 0;">
-                    <div class="calendar-cell" style="background-color: #3b82f6 !important; border-color: #2563eb !important; color: white !important; margin: 2px;">
+                    <div class="calendar-cell" style="background-color: #1b2335 !important; border-color: #334155 !important; color: white !important; margin: 2px;">
                       <div class="calendar-metric" style="color: white !important;">Лиды: ${trackerPeriodMetrics.totalLeads}</div>
                       <div class="calendar-metric" style="color: white !important;">CPL: ${trackerPeriodMetrics.avgCPL}</div>
                       <div class="calendar-metric" style="color: white !important;">Расх.: ${trackerPeriodMetrics.totalSpend}</div>
@@ -2966,7 +2968,7 @@
                     </div>
                   </td>
                   <td style="padding: 0;">
-                    <div class="calendar-cell" style="background-color: #3b82f6 !important; border-color: #2563eb !important; color: white !important; margin: 2px;">
+                    <div class="calendar-cell" style="background-color: #232a3b !important; border-color: #334155 !important; color: white !important; margin: 2px;">
                       <div class="calendar-metric" style="color: white !important;">Лиды: ${trackerLast7DaysMetrics.totalLeads}</div>
                       <div class="calendar-metric" style="color: white !important;">CPL: ${trackerLast7DaysMetrics.avgCPL}</div>
                       <div class="calendar-metric" style="color: white !important;">Расх.: ${trackerLast7DaysMetrics.totalSpend}</div>
@@ -2986,15 +2988,17 @@
                         });
                     }
 
+                    const statusClass = getCPLStatus(totalLeads, totalSpend, maxCPLThreshold);
+
                     return `
                   <td>
-                    <div class="calendar-cell" style="background-color: #3b82f6 !important; border-color: #2563eb !important; color: white !important;">
-                        <div class="calendar-metric" style="color: white !important;">Лиды: ${totalLeads}</div>
-                        <div class="calendar-metric" style="color: white !important;">CPL: ${formatCPL(totalLeads, totalSpend)}</div>
-                        <div class="calendar-metric" style="color: white !important;">Расх.: ${formatValue(totalSpend)}</div>
-                        <div class="calendar-metric" style="color: white !important;">CTR: ${formatCTR(totalLeads, totalSpend, dateIndex, trackerData)}</div>
-                        <div class="calendar-metric" style="color: white !important;">CPC: ${formatCPC(totalLeads, totalSpend, dateIndex, trackerData)}</div>
-                        <div class="calendar-metric" style="color: white !important;">CPM: ${formatCPM(totalLeads, totalSpend, dateIndex, trackerData)}</div>
+                    <div class="calendar-cell ${statusClass}">
+                        <div class="calendar-metric">Лиды: ${totalLeads}</div>
+                        <div class="calendar-metric">CPL: ${formatCPL(totalLeads, totalSpend)}</div>
+                        <div class="calendar-metric">Расх.: ${formatValue(totalSpend)}</div>
+                        <div class="calendar-metric">CTR: ${formatCTR(totalLeads, totalSpend, dateIndex, trackerData)}</div>
+                        <div class="calendar-metric">CPC: ${formatCPC(totalLeads, totalSpend, dateIndex, trackerData)}</div>
+                        <div class="calendar-metric">CPM: ${formatCPM(totalLeads, totalSpend, dateIndex, trackerData)}</div>
                       </div>
                   </td>
                 `;
@@ -3030,7 +3034,7 @@
                   </div>
                 </td>
                 <td style="padding: 0;">
-                    <div class="calendar-cell" style="background-color: #3b82f6 !important; border-color: #2563eb !important; color: white !important; margin: 2px;">
+                    <div class="calendar-cell" style="background-color: #1b2335 !important; border-color: #334155 !important; color: white !important; margin: 2px;">
                       <div class="calendar-metric" style="color: white !important;">Лиды: ${campaignPeriodMetrics.totalLeads}</div>
                       <div class="calendar-metric" style="color: white !important;">CPL: ${campaignPeriodMetrics.avgCPL}</div>
                       <div class="calendar-metric" style="color: white !important;">Расх.: ${campaignPeriodMetrics.totalSpend}</div>
@@ -3040,7 +3044,7 @@
                     </div>
                   </td>
                   <td style="padding: 0;">
-                    <div class="calendar-cell" style="background-color: #3b82f6 !important; border-color: #2563eb !important; color: white !important; margin: 2px;">
+                    <div class="calendar-cell" style="background-color: #232a3b !important; border-color: #334155 !important; color: white !important; margin: 2px;">
                       <div class="calendar-metric" style="color: white !important;">Лиды: ${campaignLast7DaysMetrics.totalLeads}</div>
                       <div class="calendar-metric" style="color: white !important;">CPL: ${campaignLast7DaysMetrics.avgCPL}</div>
                       <div class="calendar-metric" style="color: white !important;">Расх.: ${campaignLast7DaysMetrics.totalSpend}</div>
@@ -3096,7 +3100,7 @@
                     </div>
                   </td>
                   <td style="padding: 0;">
-                    <div class="calendar-cell" style="background-color: #3b82f6 !important; border-color: #2563eb !important; color: white !important; margin: 2px;">
+                    <div class="calendar-cell" style="background-color: #1b2335 !important; border-color: #334155 !important; color: white !important; margin: 2px;">
                       <div class="calendar-metric" style="color: white !important;">Лиды: ${groupPeriodMetrics.totalLeads}</div>
                       <div class="calendar-metric" style="color: white !important;">CPL: ${groupPeriodMetrics.avgCPL}</div>
                       <div class="calendar-metric" style="color: white !important;">Расх.: ${groupPeriodMetrics.totalSpend}</div>
@@ -3106,7 +3110,7 @@
                     </div>
                   </td>
                   <td style="padding: 0;">
-                    <div class="calendar-cell" style="background-color: #3b82f6 !important; border-color: #2563eb !important; color: white !important; margin: 2px;">
+                    <div class="calendar-cell" style="background-color: #232a3b !important; border-color: #334155 !important; color: white !important; margin: 2px;">
                       <div class="calendar-metric" style="color: white !important;">Лиды: ${groupLast7DaysMetrics.totalLeads}</div>
                       <div class="calendar-metric" style="color: white !important;">CPL: ${groupLast7DaysMetrics.avgCPL}</div>
                       <div class="calendar-metric" style="color: white !important;">Расх.: ${groupLast7DaysMetrics.totalSpend}</div>
@@ -3161,7 +3165,7 @@
                       </div>
                     </td>
                     <td style="padding: 0;">
-                      <div class="calendar-cell" style="background-color: #3b82f6 !important; border-color: #2563eb !important; color: white !important; margin: 2px;">
+                      <div class="calendar-cell" style="background-color: #1b2335 !important; border-color: #334155 !important; color: white !important; margin: 2px;">
                         <div class="calendar-metric" style="color: white !important;">Лиды: ${adPeriodMetrics.totalLeads}</div>
                         <div class="calendar-metric" style="color: white !important;">CPL: ${adPeriodMetrics.avgCPL}</div>
                         <div class="calendar-metric" style="color: white !important;">Расх.: ${adPeriodMetrics.totalSpend}</div>
@@ -3171,7 +3175,7 @@
                       </div>
                     </td>
                     <td style="padding: 0;">
-                      <div class="calendar-cell" style="background-color: #3b82f6 !important; border-color: #2563eb !important; color: white !important; margin: 2px;">
+                      <div class="calendar-cell" style="background-color: #232a3b !important; border-color: #334155 !important; color: white !important; margin: 2px;">
                         <div class="calendar-metric" style="color: white !important;">Лиды: ${adLast7DaysMetrics.totalLeads}</div>
                         <div class="calendar-metric" style="color: white !important;">CPL: ${adLast7DaysMetrics.avgCPL}</div>
                         <div class="calendar-metric" style="color: white !important;">Расх.: ${adLast7DaysMetrics.totalSpend}</div>
