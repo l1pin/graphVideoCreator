@@ -2408,6 +2408,11 @@ if (campaignName && !calendarData[trackerName].campaigns[campaignName]) {
         leads: [],
         spend: [],
         videoNames: [],
+        clicks: [],
+        impressions: [],
+        ctr: [],
+        cpc: [],
+        cpm: [],
         groups: {}
     };
 }
@@ -2420,6 +2425,11 @@ if (campaignName && groupName && !calendarData[trackerName].campaigns[campaignNa
         leads: [],
         spend: [],
         videoNames: [],
+        clicks: [],
+        impressions: [],
+        ctr: [],
+        cpc: [],
+        cpm: [],
         ads: {}
     };
 }
@@ -2431,7 +2441,12 @@ if (campaignName && groupName && adName && !calendarData[trackerName].campaigns[
         cpl: [],
         leads: [],
         spend: [],
-        videoNames: []
+        videoNames: [],
+        clicks: [],
+        impressions: [],
+        ctr: [],
+        cpc: [],
+        cpm: []
     };
 }
         });
@@ -2455,6 +2470,11 @@ Object.keys(calendarData).forEach(trackerName => {
             campaignData.leads.push(0);
             campaignData.spend.push(0);
             campaignData.videoNames.push('');
+            campaignData.clicks.push(0);
+            campaignData.impressions.push(0);
+            campaignData.ctr.push(0);
+            campaignData.cpc.push(0);
+            campaignData.cpm.push(0);
         });
 
         Object.keys(campaignData.groups).forEach(groupName => {
@@ -2466,6 +2486,11 @@ Object.keys(calendarData).forEach(trackerName => {
                 groupData.leads.push(0);
                 groupData.spend.push(0);
                 groupData.videoNames.push('');
+                groupData.clicks.push(0);
+                groupData.impressions.push(0);
+                groupData.ctr.push(0);
+                groupData.cpc.push(0);
+                groupData.cpm.push(0);
             });
 
             Object.keys(groupData.ads).forEach(adName => {
@@ -2477,6 +2502,11 @@ Object.keys(calendarData).forEach(trackerName => {
                     adData.leads.push(0);
                     adData.spend.push(0);
                     adData.videoNames.push('');
+                    adData.clicks.push(0);
+                    adData.impressions.push(0);
+                    adData.ctr.push(0);
+                    adData.cpc.push(0);
+                    adData.cpm.push(0);
                 });
             });
         });
@@ -2497,7 +2527,12 @@ allRows.forEach((row) => {
     const dateStr = Utilities.formatDate(dateObj, "Europe/Kiev", "dd.MM.yyyy");
     const leads = Number(row.valid) || 0;
     const spend = Number(row.cost) || 0;
+    const clicks = Number(row.clicks_on_link_tracker) || 0;
+    const impressions = Number(row.showed) || 0;
     const cpl = leads > 0 ? spend / leads : 0;
+    const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+    const cpc = clicks > 0 ? spend / clicks : 0;
+    const cpm = impressions > 0 ? (spend / impressions) * 1000 : 0;
 
     if (calendarData[trackerName]) {
         const dateIndex = calendarData[trackerName].dates.indexOf(dateStr);
@@ -2507,6 +2542,11 @@ allRows.forEach((row) => {
             campaignData.cpl[dateIndex] += cpl;
             campaignData.leads[dateIndex] += leads;
             campaignData.spend[dateIndex] += spend;
+            campaignData.clicks[dateIndex] += clicks;
+            campaignData.impressions[dateIndex] += impressions;
+            campaignData.ctr[dateIndex] = campaignData.impressions[dateIndex] > 0 ? (campaignData.clicks[dateIndex] / campaignData.impressions[dateIndex]) * 100 : 0;
+            campaignData.cpc[dateIndex] = campaignData.clicks[dateIndex] > 0 ? campaignData.spend[dateIndex] / campaignData.clicks[dateIndex] : 0;
+            campaignData.cpm[dateIndex] = campaignData.impressions[dateIndex] > 0 ? (campaignData.spend[dateIndex] / campaignData.impressions[dateIndex]) * 1000 : 0;
             if (videoName && !campaignData.videoNames[dateIndex]) {
                 campaignData.videoNames[dateIndex] = videoName;
             }
@@ -2516,6 +2556,11 @@ allRows.forEach((row) => {
                 groupData.cpl[dateIndex] += cpl;
                 groupData.leads[dateIndex] += leads;
                 groupData.spend[dateIndex] += spend;
+                groupData.clicks[dateIndex] += clicks;
+                groupData.impressions[dateIndex] += impressions;
+                groupData.ctr[dateIndex] = groupData.impressions[dateIndex] > 0 ? (groupData.clicks[dateIndex] / groupData.impressions[dateIndex]) * 100 : 0;
+                groupData.cpc[dateIndex] = groupData.clicks[dateIndex] > 0 ? groupData.spend[dateIndex] / groupData.clicks[dateIndex] : 0;
+                groupData.cpm[dateIndex] = groupData.impressions[dateIndex] > 0 ? (groupData.spend[dateIndex] / groupData.impressions[dateIndex]) * 1000 : 0;
                 if (videoName && !groupData.videoNames[dateIndex]) {
                     groupData.videoNames[dateIndex] = videoName;
                 }
@@ -2525,6 +2570,11 @@ allRows.forEach((row) => {
                     adData.cpl[dateIndex] += cpl;
                     adData.leads[dateIndex] += leads;
                     adData.spend[dateIndex] += spend;
+                    adData.clicks[dateIndex] += clicks;
+                    adData.impressions[dateIndex] += impressions;
+                    adData.ctr[dateIndex] = adData.impressions[dateIndex] > 0 ? (adData.clicks[dateIndex] / adData.impressions[dateIndex]) * 100 : 0;
+                    adData.cpc[dateIndex] = adData.clicks[dateIndex] > 0 ? adData.spend[dateIndex] / adData.clicks[dateIndex] : 0;
+                    adData.cpm[dateIndex] = adData.impressions[dateIndex] > 0 ? (adData.spend[dateIndex] / adData.impressions[dateIndex]) * 1000 : 0;
                     if (videoName && !adData.videoNames[dateIndex]) {
                         adData.videoNames[dateIndex] = videoName;
                     }
