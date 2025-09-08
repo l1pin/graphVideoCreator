@@ -2814,6 +2814,9 @@
                 const [dayB, monthB, yearB] = b.split('.').map(Number);
                 return yearA - yearB || monthA - monthB || dayA - dayB;
             });
+            
+            console.log('📅 CALENDAR: All dates collected and sorted:', allDates);
+            console.log('📅 CALENDAR: Sample tracker dates:', Object.values(calendarData)[0]?.dates);
 
             function getCPLStatus(leads, spend, maxCPLThreshold = 3.5) {
                 if (spend === 0 && leads === 0) return 'calendar-muted';
@@ -3007,21 +3010,22 @@
                         </div>
                       </td>
                   ${allDates.map(date => {
-                        const dateIndex = allDates.indexOf(date);
                         let totalLeads = 0, totalSpend = 0, totalClicks = 0, totalImpressions = 0;
 
-                        if (dateIndex >= 0) {
-                            Object.values(videoData.campaigns || {}).forEach(campaignData => {
-                                Object.values(campaignData.groups || {}).forEach(groupData => {
-                                    Object.values(groupData.ads || {}).forEach(adData => {
-                                        totalLeads += adData.leads[dateIndex] || 0;
-                                        totalSpend += adData.spend[dateIndex] || 0;
-                                        totalClicks += adData.clicks[dateIndex] || 0;
-                                        totalImpressions += adData.impressions[dateIndex] || 0;
-                                    });
+                        Object.values(videoData.campaigns || {}).forEach(campaignData => {
+                            Object.values(campaignData.groups || {}).forEach(groupData => {
+                                Object.values(groupData.ads || {}).forEach(adData => {
+                                    // Ищем правильный индекс в данных объявления
+                                    const adDateIndex = adData.dates.indexOf(date);
+                                    if (adDateIndex >= 0) {
+                                        totalLeads += adData.leads[adDateIndex] || 0;
+                                        totalSpend += adData.spend[adDateIndex] || 0;
+                                        totalClicks += adData.clicks[adDateIndex] || 0;
+                                        totalImpressions += adData.impressions[adDateIndex] || 0;
+                                    }
                                 });
                             });
-                        }
+                        });
 
                         const statusClass = getCPLStatus(totalLeads, totalSpend, maxCPLThreshold);
                         const ctr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) + '%' : '0,00%';
@@ -3113,19 +3117,20 @@
                         </div>
                       </td>
                     ${allDates.map(date => {
-                            const dateIndex = allDates.indexOf(date);
                             let leads = 0, spend = 0, clicks = 0, impressions = 0;
 
-                            if (dateIndex >= 0) {
-                                Object.values(campaignData.groups || {}).forEach(groupData => {
-                                    Object.values(groupData.ads || {}).forEach(adData => {
-                                        leads += adData.leads[dateIndex] || 0;
-                                        spend += adData.spend[dateIndex] || 0;
-                                        clicks += adData.clicks[dateIndex] || 0;
-                                        impressions += adData.impressions[dateIndex] || 0;
-                                    });
+                            Object.values(campaignData.groups || {}).forEach(groupData => {
+                                Object.values(groupData.ads || {}).forEach(adData => {
+                                    // Ищем правильный индекс в данных объявления
+                                    const adDateIndex = adData.dates.indexOf(date);
+                                    if (adDateIndex >= 0) {
+                                        leads += adData.leads[adDateIndex] || 0;
+                                        spend += adData.spend[adDateIndex] || 0;
+                                        clicks += adData.clicks[adDateIndex] || 0;
+                                        impressions += adData.impressions[adDateIndex] || 0;
+                                    }
                                 });
-                            }
+                            });
 
                             const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) + '%' : '0,00%';
                             const cpc = clicks > 0 ? (spend / clicks).toFixed(2) : '0,00';
@@ -3248,17 +3253,18 @@
                         })()}
                       </td>
                       ${allDates.map(date => {
-                                const dateIndex = allDates.indexOf(date);
                                 let leads = 0, spend = 0, clicks = 0, impressions = 0;
 
-                                if (dateIndex >= 0) {
-                                    Object.values(groupData.ads || {}).forEach(adData => {
-                                        leads += adData.leads[dateIndex] || 0;
-                                        spend += adData.spend[dateIndex] || 0;
-                                        clicks += adData.clicks[dateIndex] || 0;
-                                        impressions += adData.impressions[dateIndex] || 0;
-                                    });
-                                }
+                                Object.values(groupData.ads || {}).forEach(adData => {
+                                    // Ищем правильный индекс в данных объявления
+                                    const adDateIndex = adData.dates.indexOf(date);
+                                    if (adDateIndex >= 0) {
+                                        leads += adData.leads[adDateIndex] || 0;
+                                        spend += adData.spend[adDateIndex] || 0;
+                                        clicks += adData.clicks[adDateIndex] || 0;
+                                        impressions += adData.impressions[adDateIndex] || 0;
+                                    }
+                                });
 
                                 const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) + '%' : '0,00%';
                                 const cpc = clicks > 0 ? (spend / clicks).toFixed(2) : '0,00';
@@ -3348,11 +3354,12 @@
                           })()}
                         </td>
                         ${allDates.map(date => {
-                                    const dateIndex = allDates.indexOf(date);
-                                    const leads = dateIndex >= 0 ? (adData.leads[dateIndex] || 0) : 0;
-                                    const spend = dateIndex >= 0 ? (adData.spend[dateIndex] || 0) : 0;
-                                    const clicks = dateIndex >= 0 ? (adData.clicks[dateIndex] || 0) : 0;
-                                    const impressions = dateIndex >= 0 ? (adData.impressions[dateIndex] || 0) : 0;
+                                    // Ищем правильный индекс в данных объявления
+                                    const adDateIndex = adData.dates.indexOf(date);
+                                    const leads = adDateIndex >= 0 ? (adData.leads[adDateIndex] || 0) : 0;
+                                    const spend = adDateIndex >= 0 ? (adData.spend[adDateIndex] || 0) : 0;
+                                    const clicks = adDateIndex >= 0 ? (adData.clicks[adDateIndex] || 0) : 0;
+                                    const impressions = adDateIndex >= 0 ? (adData.impressions[adDateIndex] || 0) : 0;
 
                                     const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) + '%' : '0,00%';
                                     const cpc = clicks > 0 ? (spend / clicks).toFixed(2) : '0,00';
