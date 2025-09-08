@@ -3495,6 +3495,8 @@
             // Получаем период пользователя для расчетов
             const userStartDate = document.getElementById("periodStart").value;
             const userEndDate = document.getElementById("periodEnd").value;
+            
+            console.log('🔍 NAV: User period for navigation:', userStartDate, 'to', userEndDate);
 
             Object.keys(data).forEach((buyerName, buyerIndex) => {
                 const buyerData = data[buyerName];
@@ -3503,10 +3505,18 @@
 
                 console.log(`🔍 NAV: Creating buyer link for ${targetPrefix}:`, buyerName, '→', buyerId);
 
-                // Расчет метрик для байера
+                // Расчет метрик для байера за выбранный период
                 let buyerPeriodMetrics = { avgCPL: "0,00", totalLeads: 0, totalSpend: "0,00" };
                 if (buyerData.buyerData && buyerData.buyerData.data) {
-                    buyerPeriodMetrics = calculateAggregatedMetrics(buyerData.buyerData.data, 0, buyerData.buyerData.data.dates.length - 1, userStartDate, userEndDate);
+                    // ВАЖНО: используем точно такие же параметры как в календаре метрик
+                    buyerPeriodMetrics = calculateAggregatedMetrics(
+                        buyerData.buyerData.data, 
+                        0, 
+                        buyerData.buyerData.data.dates.length - 1, 
+                        userStartDate, 
+                        userEndDate
+                    );
+                    console.log(`📊 NAV: Buyer ${buyerName} period metrics:`, buyerPeriodMetrics);
                 }
 
                 html += `
@@ -3534,10 +3544,18 @@
 
                     console.log(`🔍 NAV: Creating campaign link for ${targetPrefix}:`, campaignName, '→', campaignId);
 
-                    // Расчет метрик для кампании
+                    // Расчет метрик для кампании за выбранный период
                     let campaignPeriodMetrics = { avgCPL: "0,00", totalLeads: 0, totalSpend: "0,00" };
                     if (campaignData.campaignData && campaignData.campaignData.data) {
-                        campaignPeriodMetrics = calculateAggregatedMetrics(campaignData.campaignData.data, 0, campaignData.campaignData.data.dates.length - 1, userStartDate, userEndDate);
+                        // ВАЖНО: используем точно такие же параметры как в календаре метрик
+                        campaignPeriodMetrics = calculateAggregatedMetrics(
+                            campaignData.campaignData.data, 
+                            0, 
+                            campaignData.campaignData.data.dates.length - 1, 
+                            userStartDate, 
+                            userEndDate
+                        );
+                        console.log(`📊 NAV: Campaign ${campaignName} period metrics:`, campaignPeriodMetrics);
                     }
 
                     html += `
@@ -3565,10 +3583,18 @@
 
                         console.log(`🔍 NAV: Creating group link for ${targetPrefix}:`, groupName, '→', groupId);
 
-                        // Расчет метрик для группы
+                        // Расчет метрик для группы за выбранный период
                         let groupPeriodMetrics = { avgCPL: "0,00", totalLeads: 0, totalSpend: "0,00" };
                         if (groupData.groupData && groupData.groupData.data) {
-                            groupPeriodMetrics = calculateAggregatedMetrics(groupData.groupData.data, 0, groupData.groupData.data.dates.length - 1, userStartDate, userEndDate);
+                            // ВАЖНО: используем точно такие же параметры как в календаре метрик
+                            groupPeriodMetrics = calculateAggregatedMetrics(
+                                groupData.groupData.data, 
+                                0, 
+                                groupData.groupData.data.dates.length - 1, 
+                                userStartDate, 
+                                userEndDate
+                            );
+                            console.log(`📊 NAV: Group ${groupName} period metrics:`, groupPeriodMetrics);
                         }
 
                         html += `
@@ -3595,10 +3621,18 @@
 
                             console.log(`🔍 NAV: Creating ad link for ${targetPrefix}:`, adName, '→', adId);
 
-                            // Расчет метрик для объявления
+                            // Расчет метрик для объявления за выбранный период
                             let adPeriodMetrics = { avgCPL: "0,00", totalLeads: 0, totalSpend: "0,00" };
                             if (groupData.ads && groupData.ads[adName] && groupData.ads[adName].data) {
-                                adPeriodMetrics = calculateAggregatedMetrics(groupData.ads[adName].data, 0, groupData.ads[adName].data.dates.length - 1, userStartDate, userEndDate);
+                                // ВАЖНО: используем точно такие же параметры как в календаре метрик
+                                adPeriodMetrics = calculateAggregatedMetrics(
+                                    groupData.ads[adName].data, 
+                                    0, 
+                                    groupData.ads[adName].data.dates.length - 1, 
+                                    userStartDate, 
+                                    userEndDate
+                                );
+                                console.log(`📊 NAV: Ad ${adName} period metrics:`, adPeriodMetrics);
                             }
 
                             html += `
@@ -3641,6 +3675,8 @@
             // Получаем период пользователя для расчетов
             const userStartDate = document.getElementById("periodStart").value;
             const userEndDate = document.getElementById("periodEnd").value;
+            
+            console.log('🔍 CALENDAR NAV: User period for navigation:', userStartDate, 'to', userEndDate);
 
             // Создаем структуру по видео
             const videoStructure = {};
@@ -3728,7 +3764,15 @@
                     videoDatesData.spendDay.push(daySpend);
                 }
 
-                const videoPeriodMetrics = calculateAggregatedMetrics(videoDatesData, 0, videoDatesData.dates.length - 1, userStartDate, userEndDate);
+                const videoPeriodMetrics = calculateAggregatedMetrics(
+                    videoDatesData, 
+                    0, 
+                    videoDatesData.dates.length - 1, 
+                    userStartDate, 
+                    userEndDate
+                );
+                
+                console.log(`📊 CALENDAR NAV: Video ${videoName} period metrics:`, videoPeriodMetrics);
 
                 html += `
                     <div class="nav-tree-item level-0" onclick="navigateToCalendarElement('${escapeHtml(videoName)}', 'video')">
@@ -3781,7 +3825,15 @@
                                             campaignDatesData.spendDay.push(daySpend);
                                         }
 
-                                        const campaignPeriodMetrics = calculateAggregatedMetrics(campaignDatesData, 0, campaignDatesData.dates.length - 1, userStartDate, userEndDate);
+                                        const campaignPeriodMetrics = calculateAggregatedMetrics(
+                                            campaignDatesData, 
+                                            0, 
+                                            campaignDatesData.dates.length - 1, 
+                                            userStartDate, 
+                                            userEndDate
+                                        );
+                                        
+                                        console.log(`📊 CALENDAR NAV: Campaign ${campaignName} period metrics:`, campaignPeriodMetrics);
 
                                         return `
                                             <span class="nav-metric">Лиды: ${campaignPeriodMetrics.totalLeads}</span>
@@ -3827,7 +3879,15 @@
                                                 groupDatesData.spendDay.push(daySpend);
                                             }
 
-                                            const groupPeriodMetrics = calculateAggregatedMetrics(groupDatesData, 0, groupDatesData.dates.length - 1, userStartDate, userEndDate);
+                                            const groupPeriodMetrics = calculateAggregatedMetrics(
+                                                groupDatesData, 
+                                                0, 
+                                                groupDatesData.dates.length - 1, 
+                                                userStartDate, 
+                                                userEndDate
+                                            );
+                                            
+                                            console.log(`📊 CALENDAR NAV: Group ${groupName} period metrics:`, groupPeriodMetrics);
 
                                             return `
                                                 <span class="nav-metric">Лиды: ${groupPeriodMetrics.totalLeads}</span>
@@ -3862,7 +3922,15 @@
                                                     spendDay: adData.spend
                                                 };
 
-                                                const adPeriodMetrics = calculateAggregatedMetrics(adDatesData, 0, adDatesData.dates.length - 1, userStartDate, userEndDate);
+                                                const adPeriodMetrics = calculateAggregatedMetrics(
+                                                    adDatesData, 
+                                                    0, 
+                                                    adDatesData.dates.length - 1, 
+                                                    userStartDate, 
+                                                    userEndDate
+                                                );
+                                                
+                                                console.log(`📊 CALENDAR NAV: Ad ${adName} period metrics:`, adPeriodMetrics);
 
                                                 return `
                                                     <span class="nav-metric">Лиды: ${adPeriodMetrics.totalLeads}</span>
@@ -4454,6 +4522,7 @@
         // Функция для расчета агрегированных метрик с учетом выбранного периода
         function calculateAggregatedMetrics(data, startIndex = 0, endIndex = null, userStartDate = null, userEndDate = null) {
             if (!data || !data.dates || data.dates.length === 0) {
+                console.log('❌ No data provided to calculateAggregatedMetrics');
                 return {
                     avgCPL: "0,00",
                     totalLeads: 0,
@@ -4469,6 +4538,9 @@
                 };
             }
 
+            console.log('📊 CALC METRICS: Input params - userStartDate:', userStartDate, 'userEndDate:', userEndDate);
+            console.log('📊 CALC METRICS: Data dates range:', data.dates[0], 'to', data.dates[data.dates.length - 1]);
+
             // Если указаны пользовательские даты, фильтруем только по ним и только активные дни
             let actualStartIndex = startIndex;
             let actualEndIndex = endIndex || data.dates.length - 1;
@@ -4476,6 +4548,7 @@
 
             if (userStartDate && userEndDate) {
                 useUserPeriod = true;
+                console.log('🔍 CALC METRICS: Using user period filtering');
                 
                 // Нормализуем пользовательские даты к началу дня
                 const userStartForComparison = new Date(userStartDate);
@@ -4683,7 +4756,7 @@
                 else rating = "D";
             }
 
-            return {
+            const finalResult = {
             avgCPL: avgCPL.toFixed(2).replace('.', ','),
             totalLeads: totalLeads,
             totalSpend: totalSpend.toFixed(2).replace('.', ','),
@@ -4700,6 +4773,11 @@
             buyers: Array.from(periodBuyers).join('\n'),
             accounts: Array.from(periodAccounts).join('\n')
         };
+        
+        console.log('📊 CALC METRICS: Final result - CPL:', finalResult.avgCPL, 'Leads:', finalResult.totalLeads, 'Spend:', finalResult.totalSpend);
+        console.log('📊 CALC METRICS: Period used:', useUserPeriod ? 'USER PERIOD' : 'ALL DATA');
+        
+        return finalResult;
         }
 
         // Функция для получения индексов последних 7 активных дней
