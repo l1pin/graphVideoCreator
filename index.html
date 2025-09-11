@@ -2802,18 +2802,47 @@
             // Получаем правильный порог CPL из сохраненных данных или используем 3.5
             const maxCPLThreshold = window.currentMaxCPL || 3.5;
 
-            // Собираем все даты
-            const allDates = [];
-            Object.values(calendarData).forEach(trackerData => {
-                trackerData.dates.forEach(date => {
-                    if (!allDates.includes(date)) allDates.push(date);
-                });
+            // Собираем все даты и находим диапазон
+        const allCalendarDates = new Set();
+        Object.values(calendarData).forEach(trackerData => {
+            trackerData.dates.forEach(date => {
+                allCalendarDates.add(date);
             });
-            allDates.sort((a, b) => {
-                const [dayA, monthA, yearA] = a.split('.').map(Number);
-                const [dayB, monthB, yearB] = b.split('.').map(Number);
-                return yearA - yearB || monthA - monthB || dayA - dayB;
-            });
+        });
+        
+        if (allCalendarDates.size === 0) {
+            container.innerHTML = '<div style="text-align: center; color: #64748b; padding: 40px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;"><i class="fas fa-calendar-times" style="font-size: 32px; margin-bottom: 12px; opacity: 0.5;"></i><p style="font-size: 16px; font-weight: 500; margin: 0;">Нет данных для календаря метрик</p></div>';
+            return;
+        }
+
+        // Сортируем найденные даты
+        const sortedCalendarDates = Array.from(allCalendarDates).sort((a, b) => {
+            const [dayA, monthA, yearA] = a.split('.').map(Number);
+            const [dayB, monthB, yearB] = b.split('.').map(Number);
+            return yearA - yearB || monthA - monthB || dayA - dayB;
+        });
+
+        const firstDate = sortedCalendarDates[0];
+        const lastDate = sortedCalendarDates[sortedCalendarDates.length - 1];
+
+        // Создаем полную последовательность дат от первой до последней
+        const allDates = [];
+        const [firstDay, firstMonth, firstYear] = firstDate.split('.').map(Number);
+        const [lastDay, lastMonth, lastYear] = lastDate.split('.').map(Number);
+        
+        const startDate = new Date(firstYear, firstMonth - 1, firstDay);
+        const endDate = new Date(lastYear, lastMonth - 1, lastDay);
+        
+        const currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+            const dateStr = String(currentDate.getDate()).padStart(2, '0') + '.' + 
+                           String(currentDate.getMonth() + 1).padStart(2, '0') + '.' + 
+                           currentDate.getFullYear();
+            allDates.push(dateStr);
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        console.log('📅 CALENDAR: Created full date sequence:', allDates.length, 'days from', firstDate, 'to', lastDate);
             
             console.log('📅 CALENDAR: All dates collected and sorted:', allDates);
             console.log('📅 CALENDAR: Sample tracker dates:', Object.values(calendarData)[0]?.dates);
@@ -3009,8 +3038,9 @@
                           <div class="calendar-metric" style="color: white !important;">CPM: ${videoLast7DaysMetrics.avgCPM}</div>
                         </div>
                       </td>
-                  ${allDates.map(date => {
+                  ${allDates.map((date, dateIndex) => {
                         let totalLeads = 0, totalSpend = 0, totalClicks = 0, totalImpressions = 0;
+                        let hasAnyData = false;
 
                         Object.values(videoData.campaigns || {}).forEach(campaignData => {
                             Object.values(campaignData.groups || {}).forEach(groupData => {
@@ -3018,14 +3048,34 @@
                                     // Ищем правильный индекс в данных объявления
                                     const adDateIndex = adData.dates.indexOf(date);
                                     if (adDateIndex >= 0) {
-                                        totalLeads += adData.leads[adDateIndex] || 0;
-                                        totalSpend += adData.spend[adDateIndex] || 0;
-                                        totalClicks += adData.clicks[adDateIndex] || 0;
-                                        totalImpressions += adData.impressions[adDateIndex] || 0;
+                                        const dayLeads = adData.leads[adDateIndex] || 0;
+                                        const daySpend = adData.spend[adDateIndex] || 0;
+                                        const dayClicks = adData.clicks[adDateIndex] || 0;
+                                        const dayImpressions = adData.impressions[adDateIndex] || 0;
+                                        
+                                        if (dayLeads > 0 || daySpend > 0 || dayClicks > 0 || dayImpressions > 0) {
+                                            hasAnyData = true;
+                                        }
+                                        
+                                        totalLeads += dayLeads;
+                                        totalSpend += daySpend;
+                                        totalClicks += dayClicks;
+                                        totalImpressions += dayImpressions;
                                     }
                                 });
                             });
                         });
+
+                        // Если нет данных, показываем как неактивный день
+                        if (!hasAnyData) {
+                            return `
+                          <td>
+                            <div class="calendar-cell calendar-muted">
+                                <div class="calendar-metric">—</div>
+                            </div>
+                          </td>
+                        `;
+                        }
 
                         const statusClass = getCPLStatus(totalLeads, totalSpend, maxCPLThreshold);
                         const ctr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) + '%' : '0,00%';
@@ -3118,19 +3168,40 @@
                       </td>
                     ${allDates.map(date => {
                             let leads = 0, spend = 0, clicks = 0, impressions = 0;
+                            let hasAnyData = false;
 
                             Object.values(campaignData.groups || {}).forEach(groupData => {
                                 Object.values(groupData.ads || {}).forEach(adData => {
                                     // Ищем правильный индекс в данных объявления
                                     const adDateIndex = adData.dates.indexOf(date);
                                     if (adDateIndex >= 0) {
-                                        leads += adData.leads[adDateIndex] || 0;
-                                        spend += adData.spend[adDateIndex] || 0;
-                                        clicks += adData.clicks[adDateIndex] || 0;
-                                        impressions += adData.impressions[adDateIndex] || 0;
+                                        const dayLeads = adData.leads[adDateIndex] || 0;
+                                        const daySpend = adData.spend[adDateIndex] || 0;
+                                        const dayClicks = adData.clicks[adDateIndex] || 0;
+                                        const dayImpressions = adData.impressions[adDateIndex] || 0;
+                                        
+                                        if (dayLeads > 0 || daySpend > 0 || dayClicks > 0 || dayImpressions > 0) {
+                                            hasAnyData = true;
+                                        }
+                                        
+                                        leads += dayLeads;
+                                        spend += daySpend;
+                                        clicks += dayClicks;
+                                        impressions += dayImpressions;
                                     }
                                 });
                             });
+
+                            // Если нет данных, показываем как неактивный день
+                            if (!hasAnyData) {
+                                return `
+                              <td>
+                                <div class="calendar-cell calendar-muted">
+                                    <div class="calendar-metric">—</div>
+                                </div>
+                              </td>
+                            `;
+                            }
 
                             const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) + '%' : '0,00%';
                             const cpc = clicks > 0 ? (spend / clicks).toFixed(2) : '0,00';
@@ -3254,17 +3325,38 @@
                       </td>
                       ${allDates.map(date => {
                                 let leads = 0, spend = 0, clicks = 0, impressions = 0;
+                                let hasAnyData = false;
 
                                 Object.values(groupData.ads || {}).forEach(adData => {
                                     // Ищем правильный индекс в данных объявления
                                     const adDateIndex = adData.dates.indexOf(date);
                                     if (adDateIndex >= 0) {
-                                        leads += adData.leads[adDateIndex] || 0;
-                                        spend += adData.spend[adDateIndex] || 0;
-                                        clicks += adData.clicks[adDateIndex] || 0;
-                                        impressions += adData.impressions[adDateIndex] || 0;
+                                        const dayLeads = adData.leads[adDateIndex] || 0;
+                                        const daySpend = adData.spend[adDateIndex] || 0;
+                                        const dayClicks = adData.clicks[adDateIndex] || 0;
+                                        const dayImpressions = adData.impressions[adDateIndex] || 0;
+                                        
+                                        if (dayLeads > 0 || daySpend > 0 || dayClicks > 0 || dayImpressions > 0) {
+                                            hasAnyData = true;
+                                        }
+                                        
+                                        leads += dayLeads;
+                                        spend += daySpend;
+                                        clicks += dayClicks;
+                                        impressions += dayImpressions;
                                     }
                                 });
+
+                                // Если нет данных, показываем как неактивный день
+                                if (!hasAnyData) {
+                                    return `
+                                  <td>
+                                    <div class="calendar-cell calendar-muted">
+                                        <div class="calendar-metric">—</div>
+                                    </div>
+                                  </td>
+                                `;
+                                }
 
                                 const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) + '%' : '0,00%';
                                 const cpc = clicks > 0 ? (spend / clicks).toFixed(2) : '0,00';
@@ -3361,6 +3453,19 @@
                                     const clicks = adDateIndex >= 0 ? (adData.clicks[adDateIndex] || 0) : 0;
                                     const impressions = adDateIndex >= 0 ? (adData.impressions[adDateIndex] || 0) : 0;
 
+                                    // Если нет данных для этого дня, показываем как неактивный
+                                    const hasAnyData = leads > 0 || spend > 0 || clicks > 0 || impressions > 0;
+                                    
+                                    if (!hasAnyData) {
+                                        return `
+                                      <td>
+                                        <div class="calendar-cell calendar-muted">
+                                            <div class="calendar-metric">—</div>
+                                        </div>
+                                      </td>
+                                    `;
+                                    }
+
                                     const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) + '%' : '0,00%';
                                     const cpc = clicks > 0 ? (spend / clicks).toFixed(2) : '0,00';
                                     const cpm = impressions > 0 ? ((spend / impressions) * 1000).toFixed(2) : '0,00';
@@ -3447,6 +3552,8 @@
             displayGeneralMetrics(data.generalMetrics);
             // Сохраняем календарные данные глобально для навигации
             window.currentCalendarData = data.calendarData || {};
+            // Сохраняем общие данные для календаря
+            window.currentGeneralData = data.generalData || {};
             // Сохраняем порог CPL для календаря
             window.currentMaxCPL = parseFloat((data.generalMetrics.displayMaxCPL || "3.5").replace(',', '.'));
             displayCalendarMetrics(data.calendarData || {});
