@@ -5723,11 +5723,14 @@
                             impressions: []
                         };
 
-                        // Собираем все даты из всех кампаний
+                        // Используем те же даты что и в календаре метрик
+                        const calendarData = window.currentCalendarData || {};
                         const allVideosDates = new Set();
-                        Object.values(videoData.campaigns || {}).forEach(campaignData => {
-                            if (campaignData.campaignData && campaignData.campaignData.data) {
-                                campaignData.campaignData.data.dates.forEach(date => allVideosDates.add(date));
+                        Object.values(calendarData).forEach(trackerData => {
+                            if (trackerData.dates) {
+                                trackerData.dates.forEach(date => {
+                                    if (!allVideosDates.has(date)) allVideosDates.add(date);
+                                });
                             }
                         });
 
@@ -5737,41 +5740,63 @@
                             return yearA - yearB || monthA - monthB || dayA - dayB;
                         });
 
-                        // Агрегируем данные по дням
+                        // Агрегируем данные по дням используя календарные данные
                         let aggCost = 0, aggLeads = 0, prevDayGood = null;
                         
-                        sortedVideosDates.forEach(date => {
+                        console.log('📊 VIDEO AGGREGATION: Processing', sortedVideosDates.length, 'dates for video:', videoName);
+                        console.log('📊 VIDEO AGGREGATION: Date range:', sortedVideosDates[0], 'to', sortedVideosDates[sortedVideosDates.length - 1]);
+                        
+                        sortedVideosDates.forEach((date, dateIdx) => {
+                            console.log(`📊 VIDEO AGGREGATION: Processing date ${dateIdx + 1}/${sortedVideosDates.length}: ${date} for video:`, videoName);
                             let dayLeads = 0, daySpend = 0, dayCostFromSources = 0;
                             let dayClicks = 0, dayImpressions = 0;
                             let dayFreq = [], dayVideoNames = [], daySiteUrls = [], dayBudget = [];
 
-                            Object.values(videoData.campaigns || {}).forEach(campaignData => {
-                                if (campaignData.campaignData && campaignData.campaignData.data) {
-                                    const dateIndex = campaignData.campaignData.data.dates.indexOf(date);
-                                    if (dateIndex >= 0) {
-                                        dayLeads += campaignData.campaignData.data.leadsDay[dateIndex] || 0;
-                                        daySpend += campaignData.campaignData.data.spendDay[dateIndex] || 0;
-                                        dayCostFromSources += campaignData.campaignData.data.costFromSourcesDay ? (campaignData.campaignData.data.costFromSourcesDay[dateIndex] || 0) : 0;
-                                        
-                                        const clicksStr = campaignData.campaignData.data.linkClicks ? campaignData.campaignData.data.linkClicks[dateIndex] : "";
-                                        if (clicksStr) dayClicks += parseInt(clicksStr) || 0;
-                                        
-                                        const impressionsStr = campaignData.campaignData.data.impressions ? campaignData.campaignData.data.impressions[dateIndex] : "";
-                                        if (impressionsStr) dayImpressions += parseInt(impressionsStr) || 0;
-                                        
-                                        if (campaignData.campaignData.data.freq && campaignData.campaignData.data.freq[dateIndex]) {
-                                            dayFreq.push(campaignData.campaignData.data.freq[dateIndex]);
+                            // Ищем данные для текущего видео в календарных данных
+                            Object.values(calendarData).forEach(trackerData => {
+                                if (trackerData.campaigns) {
+                                    Object.values(trackerData.campaigns).forEach(campaignData => {
+                                        if (campaignData.groups) {
+                                            Object.values(campaignData.groups).forEach(groupData => {
+                                                if (groupData.ads) {
+                                                    Object.values(groupData.ads).forEach(adData => {
+                                                        // Проверяем что это данные нашего видео
+                                                        if (adData.videoNames) {
+                                                            const dateIndex = trackerData.dates.indexOf(date);
+                                                            if (dateIndex >= 0 && adData.videoNames[dateIndex] && 
+                                                                adData.videoNames[dateIndex].trim() === videoName.trim()) {
+                                                                dayLeads += adData.leads[dateIndex] || 0;
+                                                                daySpend += adData.spend[dateIndex] || 0;
+                                                                dayClicks += adData.clicks ? (adData.clicks[dateIndex] || 0) : 0;
+                                                                dayImpressions += adData.impressions ? (adData.impressions[dateIndex] || 0) : 0;
+                                                                
+                                                                // Собираем дополнительные данные из buyerGroupsData для совместимости
+                                                                Object.values(videoData.campaigns || {}).forEach(buyerCampaignData => {
+                                                                    if (buyerCampaignData.campaignData && buyerCampaignData.campaignData.data) {
+                                                                        const buyerDateIndex = buyerCampaignData.campaignData.data.dates.indexOf(date);
+                                                                        if (buyerDateIndex >= 0) {
+                                                                            if (buyerCampaignData.campaignData.data.freq && buyerCampaignData.campaignData.data.freq[buyerDateIndex]) {
+                                                                                dayFreq.push(buyerCampaignData.campaignData.data.freq[buyerDateIndex]);
+                                                                            }
+                                                                            if (buyerCampaignData.campaignData.data.videoName && buyerCampaignData.campaignData.data.videoName[buyerDateIndex]) {
+                                                                                dayVideoNames.push(buyerCampaignData.campaignData.data.videoName[buyerDateIndex]);
+                                                                            }
+                                                                            if (buyerCampaignData.campaignData.data.siteUrl && buyerCampaignData.campaignData.data.siteUrl[buyerDateIndex]) {
+                                                                                daySiteUrls.push(buyerCampaignData.campaignData.data.siteUrl[buyerDateIndex]);
+                                                                            }
+                                                                            if (buyerCampaignData.campaignData.data.budget && buyerCampaignData.campaignData.data.budget[buyerDateIndex]) {
+                                                                                dayBudget.push(buyerCampaignData.campaignData.data.budget[buyerDateIndex]);
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                });
+                                                            }
+                                                        }
+                                                    });
+                                                }
+                                            });
                                         }
-                                        if (campaignData.campaignData.data.videoName && campaignData.campaignData.data.videoName[dateIndex]) {
-                                            dayVideoNames.push(campaignData.campaignData.data.videoName[dateIndex]);
-                                        }
-                                        if (campaignData.campaignData.data.siteUrl && campaignData.campaignData.data.siteUrl[dateIndex]) {
-                                            daySiteUrls.push(campaignData.campaignData.data.siteUrl[dateIndex]);
-                                        }
-                                        if (campaignData.campaignData.data.budget && campaignData.campaignData.data.budget[dateIndex]) {
-                                            dayBudget.push(campaignData.campaignData.data.budget[dateIndex]);
-                                        }
-                                    }
+                                    });
                                 }
                             });
 
@@ -5855,6 +5880,64 @@
 
                             videoAggregatedData.avgWatchTime.push('');
                         });
+
+                        // Обрабатываем неактивные дни для видео как в других таблицах
+                        console.log('🔄 VIDEO: Processing inactive days for video:', videoName);
+                        
+                        const videoColumnClasses = [];
+                        let firstActiveFound = false;
+                        let lastActiveIndex = -1;
+                        
+                        // Находим последний активный день
+                        for (let i = videoAggregatedData.dates.length - 1; i >= 0; i--) {
+                            if (videoAggregatedData.leadsDay[i] > 0 || videoAggregatedData.spendDay[i] > 0) {
+                                lastActiveIndex = i;
+                                break;
+                            }
+                        }
+                        
+                        console.log('🔄 VIDEO: Last active day index:', lastActiveIndex, 'for video:', videoName);
+                        
+                        for (let i = 0; i < videoAggregatedData.dates.length; i++) {
+                            const isActive = videoAggregatedData.leadsDay[i] > 0 || videoAggregatedData.spendDay[i] > 0;
+                            
+                            if (!firstActiveFound && !isActive) {
+                                // Дни до первого активного - не показываем
+                                videoColumnClasses.push('hidden-before-active');
+                            } else if (isActive) {
+                                // Активный день
+                                videoColumnClasses.push('normal-spend');
+                                firstActiveFound = true;
+                            } else if (i > lastActiveIndex) {
+                                // Дни после последнего активного - не показываем
+                                videoColumnClasses.push('hidden-after-active');
+                            } else {
+                                // Неактивный день между активными
+                                // Проверяем, является ли это началом диапазона неактивных дней
+                                let rangeEnd = i;
+                                while (rangeEnd < lastActiveIndex && 
+                                       (videoAggregatedData.leadsDay[rangeEnd] === 0 && videoAggregatedData.spendDay[rangeEnd] === 0)) {
+                                    rangeEnd++;
+                                }
+                                rangeEnd--; // Последний неактивный день в диапазоне
+                                
+                                if (rangeEnd > i) {
+                                    // Диапазон неактивных дней
+                                    videoColumnClasses.push('zero-spend-range');
+                                    for (let j = i + 1; j <= rangeEnd; j++) {
+                                        videoColumnClasses.push('zero-spend-hidden');
+                                    }
+                                    i = rangeEnd; // Пропускаем обработанные дни
+                                } else {
+                                    // Одиночный неактивный день
+                                    videoColumnClasses.push('zero-spend-single');
+                                }
+                            }
+                        }
+                        
+                        videoAggregatedData.columnClasses = videoColumnClasses;
+                        
+                        console.log('🔄 VIDEO: Created column classes:', videoColumnClasses.length, 'for', videoAggregatedData.dates.length, 'dates');
 
                         // Создаем график и таблицу для видео
                         const videoChartId = `video_chart_${videoId}`;
@@ -6593,6 +6676,13 @@
                 }
 
                 for (let i = 0; i < data.dates.length; i++) {
+                    // Проверяем нужно ли скрывать эту колонку
+                    const colClass = data.columnClasses && data.columnClasses[i] ? data.columnClasses[i] : "normal-spend";
+                    
+                    if (colClass === 'hidden-before-active' || colClass === 'hidden-after-active' || colClass === 'zero-spend-hidden') {
+                        continue; // Пропускаем скрытые колонки
+                    }
+                    
                     let value = "";
                     let className = "";
                     let cellStyle = "";
@@ -6849,10 +6939,20 @@
                         }
                     }
 
-                    const colClass =
-                        data.columnClasses && data.columnClasses[i]
-                            ? data.columnClasses[i]
-                            : "normal-spend";
+                    // Обработка диапазонов неактивных дней
+                    if (colClass === 'zero-spend-range') {
+                        let rangeCount = 1;
+                        for (let j = i + 1; j < data.dates.length && data.columnClasses && data.columnClasses[j] === 'zero-spend-hidden'; j++) {
+                            rangeCount++;
+                        }
+                        
+                        if (index === 0) { // Для строки с датами
+                            value = `${rangeCount} дн.`;
+                        } else if (value === "" || value === "0" || value === "0,00") {
+                            value = "—"; // Для остальных строк с пустыми значениями
+                        }
+                    }
+
                     className += ` ${colClass}`;
 
                     // Добавляем центрирование для нулевых колонок
