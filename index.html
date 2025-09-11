@@ -5723,7 +5723,7 @@
                             impressions: []
                         };
 
-                        // Используем те же даты что и в календаре метрик
+                        // Используем ВСЕ даты из календаря (включая неактивные для этого видео)
                         const calendarData = window.currentCalendarData || {};
                         const allVideosDates = new Set();
                         Object.values(calendarData).forEach(trackerData => {
@@ -5739,6 +5739,9 @@
                             const [dayB, monthB, yearB] = b.split('.').map(Number);
                             return yearA - yearB || monthA - monthB || dayA - dayB;
                         });
+                        
+                        console.log('📊 VIDEO: Processing ALL dates from calendar:', sortedVideosDates.length, 'for video:', videoName);
+                        console.log('📊 VIDEO: Date range:', sortedVideosDates[0], 'to', sortedVideosDates[sortedVideosDates.length - 1]);
 
                         // Агрегируем данные по дням используя календарные данные
                         let aggCost = 0, aggLeads = 0, prevDayGood = null;
@@ -5747,10 +5750,10 @@
                         console.log('📊 VIDEO AGGREGATION: Date range:', sortedVideosDates[0], 'to', sortedVideosDates[sortedVideosDates.length - 1]);
                         
                         sortedVideosDates.forEach((date, dateIdx) => {
-                            console.log(`📊 VIDEO AGGREGATION: Processing date ${dateIdx + 1}/${sortedVideosDates.length}: ${date} for video:`, videoName);
                             let dayLeads = 0, daySpend = 0, dayCostFromSources = 0;
                             let dayClicks = 0, dayImpressions = 0;
                             let dayFreq = [], dayVideoNames = [], daySiteUrls = [], dayBudget = [];
+                            let videoActiveThisDay = false;
 
                             // Ищем данные для текущего видео в календарных данных
                             Object.values(calendarData).forEach(trackerData => {
@@ -5769,27 +5772,7 @@
                                                                 daySpend += adData.spend[dateIndex] || 0;
                                                                 dayClicks += adData.clicks ? (adData.clicks[dateIndex] || 0) : 0;
                                                                 dayImpressions += adData.impressions ? (adData.impressions[dateIndex] || 0) : 0;
-                                                                
-                                                                // Собираем дополнительные данные из buyerGroupsData для совместимости
-                                                                Object.values(videoData.campaigns || {}).forEach(buyerCampaignData => {
-                                                                    if (buyerCampaignData.campaignData && buyerCampaignData.campaignData.data) {
-                                                                        const buyerDateIndex = buyerCampaignData.campaignData.data.dates.indexOf(date);
-                                                                        if (buyerDateIndex >= 0) {
-                                                                            if (buyerCampaignData.campaignData.data.freq && buyerCampaignData.campaignData.data.freq[buyerDateIndex]) {
-                                                                                dayFreq.push(buyerCampaignData.campaignData.data.freq[buyerDateIndex]);
-                                                                            }
-                                                                            if (buyerCampaignData.campaignData.data.videoName && buyerCampaignData.campaignData.data.videoName[buyerDateIndex]) {
-                                                                                dayVideoNames.push(buyerCampaignData.campaignData.data.videoName[buyerDateIndex]);
-                                                                            }
-                                                                            if (buyerCampaignData.campaignData.data.siteUrl && buyerCampaignData.campaignData.data.siteUrl[buyerDateIndex]) {
-                                                                                daySiteUrls.push(buyerCampaignData.campaignData.data.siteUrl[buyerDateIndex]);
-                                                                            }
-                                                                            if (buyerCampaignData.campaignData.data.budget && buyerCampaignData.campaignData.data.budget[buyerDateIndex]) {
-                                                                                dayBudget.push(buyerCampaignData.campaignData.data.budget[buyerDateIndex]);
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                });
+                                                                videoActiveThisDay = true;
                                                             }
                                                         }
                                                     });
@@ -5799,6 +5782,38 @@
                                     });
                                 }
                             });
+
+                            // Отдельно собираем costFromSourcesDay и другие данные из buyerGroupsData ДЛЯ ВСЕХ ДНЕЙ
+                            Object.values(videoData.campaigns || {}).forEach(buyerCampaignData => {
+                                if (buyerCampaignData.campaignData && buyerCampaignData.campaignData.data) {
+                                    const buyerDateIndex = buyerCampaignData.campaignData.data.dates.indexOf(date);
+                                    if (buyerDateIndex >= 0) {
+                                        // Проверяем что в этот день это видео было активно в кампании
+                                        const dayVideoName = buyerCampaignData.campaignData.data.videoName ? buyerCampaignData.campaignData.data.videoName[buyerDateIndex] : "";
+                                        if (dayVideoName && dayVideoName.includes(videoName)) {
+                                            // Добавляем данные только если видео активно в этот день в этой кампании
+                                            if (buyerCampaignData.campaignData.data.costFromSourcesDay) {
+                                                dayCostFromSources += buyerCampaignData.campaignData.data.costFromSourcesDay[buyerDateIndex] || 0;
+                                            }
+                                            
+                                            if (buyerCampaignData.campaignData.data.freq && buyerCampaignData.campaignData.data.freq[buyerDateIndex]) {
+                                                dayFreq.push(buyerCampaignData.campaignData.data.freq[buyerDateIndex]);
+                                            }
+                                            if (buyerCampaignData.campaignData.data.videoName && buyerCampaignData.campaignData.data.videoName[buyerDateIndex]) {
+                                                dayVideoNames.push(buyerCampaignData.campaignData.data.videoName[buyerDateIndex]);
+                                            }
+                                            if (buyerCampaignData.campaignData.data.siteUrl && buyerCampaignData.campaignData.data.siteUrl[buyerDateIndex]) {
+                                                daySiteUrls.push(buyerCampaignData.campaignData.data.siteUrl[buyerDateIndex]);
+                                            }
+                                            if (buyerCampaignData.campaignData.data.budget && buyerCampaignData.campaignData.data.budget[buyerDateIndex]) {
+                                                dayBudget.push(buyerCampaignData.campaignData.data.budget[buyerDateIndex]);
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                            
+                            console.log(`📊 VIDEO: Date ${date} - Leads: ${dayLeads}, Spend: ${daySpend}, Cost: ${dayCostFromSources}, Active: ${videoActiveThisDay}`);
 
                             const dayCpl = dayLeads > 0 ? daySpend / dayLeads : 0;
                             const displayMaxCPL = 3.5;
@@ -6963,11 +6978,13 @@
 
                     if (
                         (segmentType === "buyer" && index === 18) ||
+                        (segmentType === "video" && index === 17) ||
                         ((segmentType === "campaign" || segmentType === "group" || segmentType === "ad") && index === 17)
                     ) {
                         html += `<td class="${className} url-cell" style="${cellStyle}${additionalStyle}">${value}</td>`;
                     } else if (
                         (segmentType === "buyer" && (index === 9 || index === 17)) ||
+                        (segmentType === "video" && index === 16) ||
                         ((segmentType === "campaign" || segmentType === "group" || segmentType === "ad") && index === 16)
                     ) {
                         html += `<td class="${className}" style="${cellStyle}${additionalStyle}">${value}</td>`;
