@@ -4818,7 +4818,8 @@
             // Раскрываем всю цепочку до этого элемента
             expandToTarget(targetElement, realElementId);
 
-            // Прокручиваем к элементу
+            // Прокручиваем к элементу с увеличенной задержкой для видео
+            const scrollDelay = realElementId.includes('enhanced_video_') ? 1200 : 800;
             setTimeout(() => {
                 console.log('📍 SCROLLING to target');
                 targetElement.scrollIntoView({
@@ -4829,21 +4830,36 @@
 
                 setTimeout(() => {
                     highlightElement(targetElement);
-                }, 300);
-            }, 800);
+                }, 500);
+            }, scrollDelay);
         }
 
         function findTargetElement(elementId) {
-            // Ищем header элемент по onclick атрибуту
-            if (elementId.includes('enhanced_buyer_')) {
-                return document.querySelector(`div.buyer-header-enhanced[onclick*="toggleBuyerGroup('${elementId}')"]`);
-            } else {
-                return document.querySelector(`div.nested-group-header-enhanced[onclick*="toggleNestedGroup('${elementId}')"]`);
+            console.log('🔍 FIND TARGET: Searching for element with ID:', elementId);
+            
+            // Для видео креативов (они используют toggleBuyerGroup как и buyer)
+            if (elementId.includes('enhanced_video_')) {
+                const videoElement = document.querySelector(`div.buyer-header-enhanced[onclick*="toggleBuyerGroup('${elementId}')"]`);
+                console.log('🔍 FIND TARGET: Video element found:', videoElement);
+                return videoElement;
+            }
+            // Для байеров
+            else if (elementId.includes('enhanced_buyer_')) {
+                const buyerElement = document.querySelector(`div.buyer-header-enhanced[onclick*="toggleBuyerGroup('${elementId}')"]`);
+                console.log('🔍 FIND TARGET: Buyer element found:', buyerElement);
+                return buyerElement;
+            } 
+            // Для всех остальных (кампании, группы, объявления)
+            else {
+                const nestedElement = document.querySelector(`div.nested-group-header-enhanced[onclick*="toggleNestedGroup('${elementId}')"]`);
+                console.log('🔍 FIND TARGET: Nested element found:', nestedElement);
+                return nestedElement;
             }
         }
 
         function expandToTarget(targetElement, elementId) {
             console.log('🔓 EXPANDING PATH to:', elementId);
+            console.log('🔓 Target element:', targetElement);
 
             // Находим всех родителей, которые нужно раскрыть
             let currentElement = targetElement;
@@ -4861,6 +4877,7 @@
                             content: parentContent,
                             type: parentContent.classList.contains('buyer-content-area') ? 'buyer' : 'nested'
                         });
+                        console.log('🔓 Added parent to expand:', parentHeader);
                     }
                 }
 
