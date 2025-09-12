@@ -4472,6 +4472,40 @@
 
                 console.log('🔍 CALENDAR NAV: User period for navigation:', userStartDate, 'to', userEndDate);
 
+                // Создаем полную последовательность дат (как в displayCalendarMetrics)
+                const allCalendarDates = new Set();
+                Object.values(calendarData).forEach(trackerData => {
+                    trackerData.dates.forEach(date => {
+                        allCalendarDates.add(date);
+                    });
+                });
+
+                const sortedCalendarDates = Array.from(allCalendarDates).sort((a, b) => {
+                    const [dayA, monthA, yearA] = a.split('.').map(Number);
+                    const [dayB, monthB, yearB] = b.split('.').map(Number);
+                    return yearA - yearB || monthA - monthB || dayA - dayB;
+                });
+
+                const firstDate = sortedCalendarDates[0];
+                const lastDate = sortedCalendarDates[sortedCalendarDates.length - 1];
+
+                // Создаем полную последовательность дат от первой до последней
+                const allDates = [];
+                const [firstDay, firstMonth, firstYear] = firstDate.split('.').map(Number);
+                const [lastDay, lastMonth, lastYear] = lastDate.split('.').map(Number);
+
+                const startDate = new Date(firstYear, firstMonth - 1, firstDay);
+                const endDate = new Date(lastYear, lastMonth - 1, lastYear);
+
+                const currentDate = new Date(startDate);
+                while (currentDate <= endDate) {
+                    const dateStr = String(currentDate.getDate()).padStart(2, '0') + '.' +
+                        String(currentDate.getMonth() + 1).padStart(2, '0') + '.' +
+                        currentDate.getFullYear();
+                    allDates.push(dateStr);
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+
                 // Создаем структуру по видео
                 const videoStructure = {};
 
@@ -4536,24 +4570,29 @@
 
                     console.log(`🔍 CALENDAR NAV: Creating video:`, videoName);
 
-                    // Расчет метрик для видео
+                    // Расчет метрик для видео (как в календаре метрик)
                     const videoDatesData = {
-                        dates: Object.values(calendarData)[0]?.dates || [],
+                        dates: allDates,
                         leadsDay: [],
                         spendDay: []
                     };
 
-                    // Собираем данные видео
-                    for (let dateIndex = 0; dateIndex < videoDatesData.dates.length; dateIndex++) {
+                    // Собираем данные видео по всем кампаниям/группам/объявлениям
+                    for (let dateIndex = 0; dateIndex < allDates.length; dateIndex++) {
                         let dayLeads = 0, daySpend = 0;
+
                         Object.values(videoData.campaigns || {}).forEach(campaignData => {
                             Object.values(campaignData.groups || {}).forEach(groupData => {
                                 Object.values(groupData.ads || {}).forEach(adData => {
-                                    dayLeads += adData.leads[dateIndex] || 0;
-                                    daySpend += adData.spend[dateIndex] || 0;
+                                    const adDateIndex = adData.dates.indexOf(allDates[dateIndex]);
+                                    if (adDateIndex >= 0) {
+                                        dayLeads += adData.leads[adDateIndex] || 0;
+                                        daySpend += adData.spend[adDateIndex] || 0;
+                                    }
                                 });
                             });
                         });
+
                         videoDatesData.leadsDay.push(dayLeads);
                         videoDatesData.spendDay.push(daySpend);
                     }
@@ -4600,34 +4639,37 @@
                                 </div>
                                 <div class="nav-item-metrics">
                                     ${(() => {
-                                // Расчет метрик для кампании
-                                const campaignDatesData = {
-                                    dates: videoDatesData.dates,
-                                    leadsDay: [],
-                                    spendDay: []
-                                };
+                                // Расчет метрик для кампании (как в календаре метрик)
+                                    const campaignDatesData = {
+                                        dates: allDates,
+                                        leadsDay: [],
+                                        spendDay: []
+                                    };
 
-                                for (let dateIndex = 0; dateIndex < videoDatesData.dates.length; dateIndex++) {
-                                    let dayLeads = 0, daySpend = 0;
-                                    Object.values(campaignData.groups || {}).forEach(groupData => {
-                                        Object.values(groupData.ads || {}).forEach(adData => {
-                                            dayLeads += adData.leads[dateIndex] || 0;
-                                            daySpend += adData.spend[dateIndex] || 0;
+                                    for (let dateIndex = 0; dateIndex < allDates.length; dateIndex++) {
+                                        let dayLeads = 0, daySpend = 0;
+                                        Object.values(campaignData.groups || {}).forEach(groupData => {
+                                            Object.values(groupData.ads || {}).forEach(adData => {
+                                                const adDateIndex = adData.dates.indexOf(allDates[dateIndex]);
+                                                if (adDateIndex >= 0) {
+                                                    dayLeads += adData.leads[adDateIndex] || 0;
+                                                    daySpend += adData.spend[adDateIndex] || 0;
+                                                }
+                                            });
                                         });
-                                    });
-                                    campaignDatesData.leadsDay.push(dayLeads);
-                                    campaignDatesData.spendDay.push(daySpend);
-                                }
+                                        campaignDatesData.leadsDay.push(dayLeads);
+                                        campaignDatesData.spendDay.push(daySpend);
+                                    }
 
-                                const campaignPeriodMetrics = calculateAggregatedMetrics(
-                                    campaignDatesData,
-                                    0,
-                                    campaignDatesData.dates.length - 1,
-                                    userStartDate,
-                                    userEndDate
-                                );
+                                    const campaignPeriodMetrics = calculateAggregatedMetrics(
+                                        campaignDatesData,
+                                        0,
+                                        campaignDatesData.dates.length - 1,
+                                        userStartDate,
+                                        userEndDate
+                                    );
 
-                                console.log(`📊 CALENDAR NAV: Campaign ${campaignName} period metrics:`, campaignPeriodMetrics);
+                                    console.log(`📊 CALENDAR NAV: Campaign ${campaignName} period metrics:`, campaignPeriodMetrics);
 
                                 return `
                                             <span class="nav-metric">Лиды: ${campaignPeriodMetrics.totalLeads}</span>
@@ -4656,32 +4698,35 @@
                                     </div>
                                     <div class="nav-item-metrics">
                                         ${(() => {
-                                    // Расчет метрик для группы
-                                    const groupDatesData = {
-                                        dates: videoDatesData.dates,
-                                        leadsDay: [],
-                                        spendDay: []
-                                    };
+                                    // Расчет метрик для группы (как в календаре метрик)
+                                        const groupDatesData = {
+                                            dates: allDates,
+                                            leadsDay: [],
+                                            spendDay: []
+                                        };
 
-                                    for (let dateIndex = 0; dateIndex < videoDatesData.dates.length; dateIndex++) {
-                                        let dayLeads = 0, daySpend = 0;
-                                        Object.values(groupData.ads || {}).forEach(adData => {
-                                            dayLeads += adData.leads[dateIndex] || 0;
-                                            daySpend += adData.spend[dateIndex] || 0;
-                                        });
-                                        groupDatesData.leadsDay.push(dayLeads);
-                                        groupDatesData.spendDay.push(daySpend);
-                                    }
+                                        for (let dateIndex = 0; dateIndex < allDates.length; dateIndex++) {
+                                            let dayLeads = 0, daySpend = 0;
+                                            Object.values(groupData.ads || {}).forEach(adData => {
+                                                const adDateIndex = adData.dates.indexOf(allDates[dateIndex]);
+                                                if (adDateIndex >= 0) {
+                                                    dayLeads += adData.leads[adDateIndex] || 0;
+                                                    daySpend += adData.spend[adDateIndex] || 0;
+                                                }
+                                            });
+                                            groupDatesData.leadsDay.push(dayLeads);
+                                            groupDatesData.spendDay.push(daySpend);
+                                        }
 
-                                    const groupPeriodMetrics = calculateAggregatedMetrics(
-                                        groupDatesData,
-                                        0,
-                                        groupDatesData.dates.length - 1,
-                                        userStartDate,
-                                        userEndDate
-                                    );
+                                        const groupPeriodMetrics = calculateAggregatedMetrics(
+                                            groupDatesData,
+                                            0,
+                                            groupDatesData.dates.length - 1,
+                                            userStartDate,
+                                            userEndDate
+                                        );
 
-                                    console.log(`📊 CALENDAR NAV: Group ${groupName} period metrics:`, groupPeriodMetrics);
+                                        console.log(`📊 CALENDAR NAV: Group ${groupName} period metrics:`, groupPeriodMetrics);
 
                                     return `
                                                 <span class="nav-metric">Лиды: ${groupPeriodMetrics.totalLeads}</span>
@@ -4708,23 +4753,35 @@
                                         </div>
                                         <div class="nav-item-metrics">
                                             ${(() => {
-                                        // Расчет метрик для объявления
-                                        const adData = groupData.ads[adName];
-                                        const adDatesData = {
-                                            dates: adData.dates,
-                                            leadsDay: adData.leads,
-                                            spendDay: adData.spend
-                                        };
+                                        // Расчет метрик для объявления (как в календаре метрик)
+                                            const adData = groupData.ads[adName];
+                                            const adDatesData = {
+                                                dates: allDates,
+                                                leadsDay: [],
+                                                spendDay: []
+                                            };
 
-                                        const adPeriodMetrics = calculateAggregatedMetrics(
-                                            adDatesData,
-                                            0,
-                                            adDatesData.dates.length - 1,
-                                            userStartDate,
-                                            userEndDate
-                                        );
+                                            // Заполняем данные объявления для всех дат
+                                            for (let dateIndex = 0; dateIndex < allDates.length; dateIndex++) {
+                                                const adDateIndex = adData.dates.indexOf(allDates[dateIndex]);
+                                                if (adDateIndex >= 0) {
+                                                    adDatesData.leadsDay.push(adData.leads[adDateIndex] || 0);
+                                                    adDatesData.spendDay.push(adData.spend[adDateIndex] || 0);
+                                                } else {
+                                                    adDatesData.leadsDay.push(0);
+                                                    adDatesData.spendDay.push(0);
+                                                }
+                                            }
 
-                                        console.log(`📊 CALENDAR NAV: Ad ${adName} period metrics:`, adPeriodMetrics);
+                                            const adPeriodMetrics = calculateAggregatedMetrics(
+                                                adDatesData,
+                                                0,
+                                                adDatesData.dates.length - 1,
+                                                userStartDate,
+                                                userEndDate
+                                            );
+
+                                            console.log(`📊 CALENDAR NAV: Ad ${adName} period metrics:`, adPeriodMetrics);
 
                                         return `
                                                     <span class="nav-metric">Лиды: ${adPeriodMetrics.totalLeads}</span>
