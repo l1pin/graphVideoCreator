@@ -907,6 +907,73 @@
             color: #7c2d12;
         }
 
+        /* Expandable cell styles */
+        .expandable-cell-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .expandable-item {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .expandable-content {
+            display: inline-block;
+            padding: 3px 6px;
+            border-radius: 6px;
+            margin: 2px 0;
+            line-height: 1.3;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .expand-control-panel {
+            width: 100%;
+            height: 18px;
+            background: rgba(71, 85, 105, 0.1);
+            border: 1px solid rgba(71, 85, 105, 0.2);
+            border-radius: 0 0 6px 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1px;
+        }
+
+        .expand-toggle {
+            background: transparent;
+            border: none;
+            color: #475569;
+            width: 100%;
+            height: 16px;
+            cursor: pointer;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .expand-toggle:hover {
+            background: rgba(71, 85, 105, 0.15);
+            color: #334155;
+        }
+
+        .expand-toggle i {
+            transition: transform 0.2s ease;
+        }
+
+        .expand-toggle.expanded i {
+            transform: rotate(180deg);
+        }
+
+        .expand-control-panel:hover {
+            background: rgba(71, 85, 105, 0.15);
+            border-color: rgba(71, 85, 105, 0.3);
+        }
+
         /* Rating Colors */
         .rating-A {
             background: #dcfce7 !important;
@@ -2947,6 +3014,45 @@
                 .join("<br>");
         }
 
+        // Функция для создания групп со стрелочками (новая)
+        function makeGroupsWithToggle(text, cellId) {
+            if (!text || text.trim() === "") return "";
+
+            const groups = text.split("\n").filter((group) => group.trim() !== "");
+            if (groups.length === 0) return "";
+
+            let html = '<div class="expandable-cell-container">';
+            
+            groups.forEach((group, index) => {
+                const trimmedGroup = group.trim();
+                const alternatingClass = index % 2 === 0 ? 'even-item' : 'odd-item';
+                const itemId = `${cellId}_group_${index}`;
+                
+                if (trimmedGroup.length <= 20) {
+                    html += `
+                        <div class="expandable-item">
+                            <span class="expandable-content ${alternatingClass}">${escapeHtml(trimmedGroup)}</span>
+                        </div>
+                    `;
+                } else {
+                    const shortened = trimmedGroup.substring(0, 17) + "...";
+                    html += `
+                        <div class="expandable-item">
+                            <span class="expandable-content ${alternatingClass}" id="${itemId}_content" data-full="${escapeHtml(trimmedGroup)}" data-short="${escapeHtml(shortened)}" data-expanded="false">${escapeHtml(shortened)}</span>
+                            <div class="expand-control-panel">
+                                <button class="expand-toggle" onclick="toggleExpandableContent('${itemId}_content')" aria-label="Развернуть">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            html += '</div>';
+            return html;
+        }
+
         // Функция для переключения отображения группы
         function toggleGroupDisplay(element) {
             const isExpanded = element.classList.contains('group-expanded');
@@ -2985,6 +3091,45 @@
                 .join("<br>");
         }
 
+        // Функция для создания рекламы со стрелочками (новая)
+        function makeAdsWithToggle(text, cellId) {
+            if (!text || text.trim() === "") return "";
+
+            const ads = text.split("\n").filter((ad) => ad.trim() !== "");
+            if (ads.length === 0) return "";
+
+            let html = '<div class="expandable-cell-container">';
+            
+            ads.forEach((ad, index) => {
+                const trimmedAd = ad.trim();
+                const alternatingClass = index % 2 === 0 ? 'even-item' : 'odd-item';
+                const itemId = `${cellId}_ad_${index}`;
+                
+                if (trimmedAd.length <= 25) {
+                    html += `
+                        <div class="expandable-item">
+                            <span class="expandable-content ${alternatingClass}">${escapeHtml(trimmedAd)}</span>
+                        </div>
+                    `;
+                } else {
+                    const shortened = trimmedAd.substring(0, 22) + "...";
+                    html += `
+                        <div class="expandable-item">
+                            <span class="expandable-content ${alternatingClass}" id="${itemId}_content" data-full="${escapeHtml(trimmedAd)}" data-short="${escapeHtml(shortened)}" data-expanded="false">${escapeHtml(shortened)}</span>
+                            <div class="expand-control-panel">
+                                <button class="expand-toggle" onclick="toggleExpandableContent('${itemId}_content')" aria-label="Развернуть">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            html += '</div>';
+            return html;
+        }
+
         // Функция для переключения отображения рекламы
         function toggleAdDisplay(element) {
             const isExpanded = element.classList.contains('ad-expanded');
@@ -3001,6 +3146,32 @@
                 // Разворачиваем
                 element.textContent = fullText;
                 element.classList.add('ad-expanded');
+            }
+        }
+
+        // Функция для переключения расширяемого содержимого
+        function toggleExpandableContent(contentId) {
+            const content = document.getElementById(contentId);
+            const toggle = content.parentElement.querySelector('.expand-toggle');
+            
+            if (!content || !toggle) return;
+            
+            const isExpanded = content.dataset.expanded === 'true';
+            const fullText = content.dataset.full;
+            const shortText = content.dataset.short;
+            
+            if (isExpanded) {
+                // Сворачиваем
+                content.textContent = shortText;
+                content.dataset.expanded = 'false';
+                toggle.classList.remove('expanded');
+                toggle.setAttribute('aria-label', 'Развернуть');
+            } else {
+                // Разворачиваем
+                content.textContent = fullText;
+                content.dataset.expanded = 'true';
+                toggle.classList.add('expanded');
+                toggle.setAttribute('aria-label', 'Свернуть');
             }
         }
 
@@ -5871,7 +6042,7 @@
                             break;
                         case 9:
                             const groupValue = data.groups ? data.groups[i] : "";
-                            value = makeGroupsClickable(groupValue, `general_groups_${i}`);
+                            value = makeGroupsWithToggle(groupValue, `general_groups_${i}`);
                             break;
                         case 10:
                             value = data.buyers ? data.buyers[i] : "";
@@ -5951,7 +6122,7 @@
                             break;
                         case 19:
                             const adValue = data.videoName ? data.videoName[i] : "";
-                            value = makeAdsClickable(adValue, `general_ads_${i}`);
+                            value = makeAdsWithToggle(adValue, `general_ads_${i}`);
                             break;
                         case 20:
                             const urlValue = data.siteUrl ? data.siteUrl[i] : "";
@@ -7646,7 +7817,7 @@
                                 break;
                             case 9:
                                 const buyerGroupValue = data.groups ? data.groups[i] : "";
-                                value = makeGroupsClickable(buyerGroupValue, `buyer_groups_${i}`);
+                                value = makeGroupsWithToggle(buyerGroupValue, `buyer_groups_${i}`);
                                 break;
                             case 10: // Частота (Frequency) - среднее значение
                                 value = data.freq ? data.freq[i] : "";
@@ -7713,7 +7884,7 @@
                                 break;
                             case 17:
                                 const buyerAdValue = data.videoName ? data.videoName[i] : "";
-                                value = makeAdsClickable(buyerAdValue, `buyer_ads_${i}`);
+                                value = makeAdsWithToggle(buyerAdValue, `buyer_ads_${i}`);
                                 break;
                             case 18:
                                 const urlValue = data.siteUrl ? data.siteUrl[i] : "";
@@ -7836,7 +8007,7 @@
                                 break;
                             case 16:
                                 const segmentAdValue = data.videoName ? data.videoName[i] : "";
-                                value = makeAdsClickable(segmentAdValue, `segment_ads_${i}`);
+                                value = makeAdsWithToggle(segmentAdValue, `segment_ads_${i}`);
                                 break;
                             case 17:
                                 const urlValue = data.siteUrl ? data.siteUrl[i] : "";
@@ -8290,6 +8461,7 @@
         window.setupTooltipHandlers = setupTooltipHandlers;
         window.toggleGroupDisplay = toggleGroupDisplay;
         window.toggleAdDisplay = toggleAdDisplay;
+        window.toggleExpandableContent = toggleExpandableContent;
 
         // Navigation expand/collapse functions
         let navigationExpanded = false;
