@@ -6129,7 +6129,17 @@
                             value = makeUrlsClickable(urlValue);
                             break;
                         case 21: // Бюджет группы объявлений - сумма за день
-                            value = data.budget ? data.budget[i] : "";
+                            const budgetValue = data.budget ? data.budget[i] : "";
+                            if (budgetValue && budgetValue.trim() !== "") {
+                                const budgetLines = budgetValue.split('\n').filter(line => line.trim() !== "");
+                                const formattedBudgetLines = budgetLines.map(line => {
+                                    const num = parseFloat(line.trim());
+                                    return !isNaN(num) ? num.toFixed(2).replace('.', ',') : line.trim();
+                                });
+                                value = formattedBudgetLines.join('\n');
+                            } else {
+                                value = "";
+                            }
                             break;
                     }
 
@@ -7329,6 +7339,8 @@
         }
 
         function displaySegmentTable(tableId, data, segmentType = "group", userStartDate = null, userEndDate = null) {
+            // Используем tableId для создания уникальных ID элементов
+            const uniqueTablePrefix = tableId.replace(/[^a-zA-Z0-9]/g, '_');
             console.log(`📋 Отображаем таблицу ${tableId} с данными:`, data);
             console.log(
                 `📋 Проверяем наличие budget в данных:`,
@@ -7817,7 +7829,7 @@
                                 break;
                             case 9:
                                 const buyerGroupValue = data.groups ? data.groups[i] : "";
-                                value = makeGroupsWithToggle(buyerGroupValue, `buyer_groups_${i}`);
+                                value = makeGroupsWithToggle(buyerGroupValue, `${uniqueTablePrefix}_groups_${i}`);
                                 break;
                             case 10: // Частота (Frequency) - среднее значение
                                 value = data.freq ? data.freq[i] : "";
@@ -7884,14 +7896,24 @@
                                 break;
                             case 17:
                                 const buyerAdValue = data.videoName ? data.videoName[i] : "";
-                                value = makeAdsWithToggle(buyerAdValue, `buyer_ads_${i}`);
+                                value = makeAdsWithToggle(buyerAdValue, `${uniqueTablePrefix}_ads_${i}`);
                                 break;
                             case 18:
                                 const urlValue = data.siteUrl ? data.siteUrl[i] : "";
                                 value = makeUrlsClickable(urlValue);
                                 break;
                             case 19: // Бюджет группы объявлений - сумма за день
-                                value = data.budget ? data.budget[i] : "";
+                                const buyerBudgetValue = data.budget ? data.budget[i] : "";
+                                if (buyerBudgetValue && buyerBudgetValue.trim() !== "") {
+                                    const budgetLines = buyerBudgetValue.split('\n').filter(line => line.trim() !== "");
+                                    const formattedBudgetLines = budgetLines.map(line => {
+                                        const num = parseFloat(line.trim());
+                                        return !isNaN(num) ? num.toFixed(2).replace('.', ',') : line.trim();
+                                    });
+                                    value = formattedBudgetLines.join('\n');
+                                } else {
+                                    value = "";
+                                }
                                 break;
                         }
                     } else if (segmentType === "video" || segmentType === "campaign" || segmentType === "group" || segmentType === "ad") {
@@ -8007,14 +8029,24 @@
                                 break;
                             case 16:
                                 const segmentAdValue = data.videoName ? data.videoName[i] : "";
-                                value = makeAdsWithToggle(segmentAdValue, `segment_ads_${i}`);
+                                value = makeAdsWithToggle(segmentAdValue, `${uniqueTablePrefix}_ads_${i}`);
                                 break;
                             case 17:
                                 const urlValue = data.siteUrl ? data.siteUrl[i] : "";
                                 value = makeUrlsClickable(urlValue);
                                 break;
                             case 18: // Бюджет группы объявлений - сумма за день
-                                value = data.budget ? data.budget[i] : "";
+                                const segmentBudgetValue = data.budget ? data.budget[i] : "";
+                                if (segmentBudgetValue && segmentBudgetValue.trim() !== "") {
+                                    const budgetLines = segmentBudgetValue.split('\n').filter(line => line.trim() !== "");
+                                    const formattedBudgetLines = budgetLines.map(line => {
+                                        const num = parseFloat(line.trim());
+                                        return !isNaN(num) ? num.toFixed(2).replace('.', ',') : line.trim();
+                                    });
+                                    value = formattedBudgetLines.join('\n');
+                                } else {
+                                    value = "";
+                                }
                                 break;
                         }
                     }
