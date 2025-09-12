@@ -8309,20 +8309,6 @@
             console.log('🚀 CALENDAR NAVIGATION for:', elementName, 'type:', elementType);
             console.log('🚀 Context - tracker:', trackerName, 'campaign:', campaignName, 'group:', groupName);
 
-            // Скроллимся сначала к секции календаря
-            const calendarSection = document.querySelector('.calendar-metrics-section');
-            if (!calendarSection) {
-                console.log('❌ Calendar metrics section not found');
-                return;
-            }
-
-            // Скроллимся к календарю
-            calendarSection.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start',
-                inline: 'nearest'
-            });
-
             // Ждем завершения скролла, затем ищем элемент
             setTimeout(() => {
                 const calendarTable = document.querySelector('.calendar-table');
@@ -8651,13 +8637,6 @@
                 console.log('❌ Calendar metrics section not found');
                 return;
             }
-
-            // Скроллимся к секции календаря
-            calendarSection.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start',
-                inline: 'nearest'
-            });
 
             // Ждем завершения скролла и ищем элемент по пути
             setTimeout(() => {
