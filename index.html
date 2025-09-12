@@ -7298,8 +7298,9 @@
                             html += `<td style="background-color: #232a3b !important; color: white !important; font-weight: bold; text-align: center; border: 2px solid #334155;">${last7DaysMetrics.avgConversion}</td>`;
                             break;
                         case 7: // Max CPL (ROI +20%)
-                            html += `<td style="background-color: #1b2335 !important; color: white !important; font-weight: bold; text-align: center; border: 2px solid #334155;">${periodMetrics.maxCPL}</td>`;
-                            html += `<td style="background-color: #232a3b !important; color: white !important; font-weight: bold; text-align: center; border: 2px solid #334155;">${last7DaysMetrics.maxCPL}</td>`;
+                            const displayMaxCPLValueSegment = (window.currentMaxCPL || 3.5).toFixed(2).replace('.', ',');
+                            html += `<td style="background-color: #1b2335 !important; color: white !important; font-weight: bold; text-align: center; border: 2px solid #334155;">${displayMaxCPLValueSegment}</td>`;
+                            html += `<td style="background-color: #232a3b !important; color: white !important; font-weight: bold; text-align: center; border: 2px solid #334155;">${displayMaxCPLValueSegment}</td>`;
                             break;
                         case 8: // CPL с учётом сбросов
                             html += `<td style="background-color: #1b2335 !important; border: 2px solid #334155;"></td>`;
@@ -7386,8 +7387,9 @@
                             html += `<td style="background-color: #232a3b !important; color: white !important; font-weight: bold; text-align: center; border: 2px solid #334155;">${last7DaysMetrics.avgConversion}</td>`;
                             break;
                         case 7: // Max CPL (ROI +20%)
-                            html += `<td style="background-color: #1b2335 !important; color: white !important; font-weight: bold; text-align: center; border: 2px solid #334155;">${periodMetrics.maxCPL}</td>`;
-                            html += `<td style="background-color: #232a3b !important; color: white !important; font-weight: bold; text-align: center; border: 2px solid #334155;">${last7DaysMetrics.maxCPL}</td>`;
+                            const displayMaxCPLValueSegment = (window.currentMaxCPL || 3.5).toFixed(2).replace('.', ',');
+                            html += `<td style="background-color: #1b2335 !important; color: white !important; font-weight: bold; text-align: center; border: 2px solid #334155;">${displayMaxCPLValueSegment}</td>`;
+                            html += `<td style="background-color: #232a3b !important; color: white !important; font-weight: bold; text-align: center; border: 2px solid #334155;">${displayMaxCPLValueSegment}</td>`;
                             break;
                         case 8: // CPL с учётом сбросов
                             html += `<td style="background-color: #1b2335 !important; border: 2px solid #334155;"></td>`;
@@ -7470,8 +7472,9 @@
                             html += `<td style="background-color: #232a3b !important; color: white !important; font-weight: bold; text-align: center; border: 2px solid #334155;">${last7DaysMetrics.avgConversion}</td>`;
                             break;
                         case 7: // Max CPL (ROI +20%)
-                            html += `<td style="background-color: #1b2335 !important; color: white !important; font-weight: bold; text-align: center; border: 2px solid #334155;">${periodMetrics.maxCPL}</td>`;
-                            html += `<td style="background-color: #232a3b !important; color: white !important; font-weight: bold; text-align: center; border: 2px solid #334155;">${last7DaysMetrics.maxCPL}</td>`;
+                            const displayMaxCPLValueSegment = (window.currentMaxCPL || 3.5).toFixed(2).replace('.', ',');
+                            html += `<td style="background-color: #1b2335 !important; color: white !important; font-weight: bold; text-align: center; border: 2px solid #334155;">${displayMaxCPLValueSegment}</td>`;
+                            html += `<td style="background-color: #232a3b !important; color: white !important; font-weight: bold; text-align: center; border: 2px solid #334155;">${displayMaxCPLValueSegment}</td>`;
                             break;
                         case 8: // CPL с учётом сбросов
                             html += `<td style="background-color: #1b2335 !important; border: 2px solid #334155;"></td>`;
@@ -7561,7 +7564,7 @@
                                 value = data.conversionDay ? data.conversionDay[i] : "";
                                 break;
                             case 7:
-                                value = formatNumber(data.maxCPL ? data.maxCPL[i] : "");
+                                value = (window.currentMaxCPL || 3.5).toFixed(2).replace('.', ',');
                                 break;
                             case 8:
                                 value = formatNumberWithZero(
@@ -7688,7 +7691,7 @@
                                 value = data.conversionDay ? data.conversionDay[i] : "";
                                 break;
                             case 7:
-                                value = formatNumber(data.maxCPL ? data.maxCPL[i] : "");
+                                value = (window.currentMaxCPL || 3.5).toFixed(2).replace('.', ',');
                                 break;
                             case 8:
                                 value = formatNumberWithZero(
