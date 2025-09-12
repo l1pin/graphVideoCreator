@@ -4143,8 +4143,8 @@
                 return cleanedName;
             }
 
-            // Функция для создания структуры навигации по байерам
-            function createBuyersNavigationStructure(data, targetPrefix) {
+            // Функция для создания структуры навигации по креативам
+            function createCreativesNavigationStructure(buyerGroupsData, targetPrefix) {
                 let html = '';
 
                 // Получаем период пользователя для расчетов
@@ -4153,65 +4153,182 @@
 
                 console.log('🔍 NAV: User period for navigation:', userStartDate, 'to', userEndDate);
 
-                Object.keys(data).forEach((buyerName, buyerIndex) => {
-                    const buyerData = data[buyerName];
-                    const cleanBuyerName = cleanName(buyerName, buyerIndex, 'buyer');
-                    const buyerId = `${targetPrefix}_buyer_${cleanBuyerName}`;
+                // ИСПРАВЛЕНО: Создаем структуру по видео из buyerGroupsData
+                const videoStructure = {};
 
-                    console.log(`🔍 NAV: Creating buyer link for ${targetPrefix}:`, buyerName, '→', buyerId);
+                // Сначала собираем все объявления по видео
+                Object.keys(buyerGroupsData).forEach(buyerName => {
+                    const buyerData = buyerGroupsData[buyerName];
+                    Object.keys(buyerData.campaigns || {}).forEach(campaignName => {
+                        const campaignData = buyerData.campaigns[campaignName];
+                        Object.keys(campaignData.groups || {}).forEach(groupName => {
+                            const groupData = campaignData.groups[groupName];
+                            Object.keys(groupData.ads || {}).forEach(adName => {
+                                const adData = groupData.ads[adName];
+                                if (adData && adData.data && adData.data.videoName) {
+                                    const uniqueVideos = new Set();
+                                    adData.data.videoName.forEach(videoName => {
+                                        if (videoName && videoName.trim() !== '') {
+                                            uniqueVideos.add(videoName.trim());
+                                        }
+                                    });
+                                    uniqueVideos.forEach(videoName => {
+                                        if (!videoStructure[videoName]) {
+                                            videoStructure[videoName] = { campaigns: {} };
+                                        }
+                                        if (!videoStructure[videoName].campaigns[campaignName]) {
+                                            videoStructure[videoName].campaigns[campaignName] = {
+                                                groups: {},
+                                                ads: [] // Собираем объявления для агрегации
+                                            };
+                                        }
+                                        if (!videoStructure[videoName].campaigns[campaignName].groups[groupName]) {
+                                            videoStructure[videoName].campaigns[campaignName].groups[groupName] = {
+                                                ads: {}
+                                            };
+                                        }
+                                        // ИСПРАВЛЕНО: Создаем уникальный ключ для объявления включающий группу
+                                        const uniqueAdKey = `${groupName}:::${adName}`;
+                                        videoStructure[videoName].campaigns[campaignName].groups[groupName].ads[adName] = adData;
 
-                    // Расчет метрик для байера за выбранный период
-                    let buyerPeriodMetrics = { avgCPL: "0,00", totalLeads: 0, totalSpend: "0,00" };
-                    if (buyerData.buyerData && buyerData.buyerData.data) {
-                        // ВАЖНО: используем точно такие же параметры как в календаре метрик
-                        buyerPeriodMetrics = calculateAggregatedMetrics(
-                            buyerData.buyerData.data,
-                            0,
-                            buyerData.buyerData.data.dates.length - 1,
-                            userStartDate,
-                            userEndDate
-                        );
-                        console.log(`📊 NAV: Buyer ${buyerName} period metrics:`, buyerPeriodMetrics);
+                                        // Проверяем что такого объявления еще нет в кампании
+                                        const existingAd = videoStructure[videoName].campaigns[campaignName].ads.find(
+                                            ad => ad.name === adName && ad.groupName === groupName
+                                        );
+
+                                        if (!existingAd) {
+                                            videoStructure[videoName].campaigns[campaignName].ads.push({
+                                                name: adName,
+                                                data: adData,
+                                                groupName: groupName,
+                                                uniqueKey: uniqueAdKey
+                                            });
+                                            console.log(`🔧 STRUCTURE: Added unique ad ${uniqueAdKey} to campaign ${campaignName}`);
+                                        }
+                                    });
+                                }
+                            });
+                        });
+                    });
+                });
+
+                Object.keys(videoStructure).forEach((videoName, videoIndex) => {
+                    const videoData = videoStructure[videoName];
+
+                    // Улучшенная очистка имени видео
+                    let cleanVideoName = String(videoName || `video_${videoIndex}`)
+                        .replace(/[^a-zA-Z0-9]/g, "_")
+                        .replace(/_+/g, "_")
+                        .replace(/^_|_$/g, "");
+
+                    if (!cleanVideoName) {
+                        cleanVideoName = `video_${videoIndex}`;
                     }
 
+                    const videoId = `${targetPrefix}_video_${cleanVideoName}`;
+
+                    console.log(`🔍 NAV: Creating video link for ${targetPrefix}:`, videoName, '→', videoId);
+
+                    // Расчет метрик для видео за выбранный период - используем данные из таблицы "Период"
+                    let videoPeriodMetrics = { avgCPL: "0,00", totalLeads: 0, totalSpend: "0,00" };
+
+                    // Находим соответствующий элемент в displayBuyerGroups для получения метрик "Период"
+                    const videoIdForSearch = `enhanced_video_${cleanVideoName}`;
+
+                    // Агрегируем метрики из всех кампаний этого видео (как в таблице "Период")
+                    let totalLeads = 0;
+                    let totalSpend = 0;
+                    let activeDatesCount = 0;
+
+                    Object.values(videoData.campaigns || {}).forEach(campaignData => {
+                        campaignData.ads.forEach(adInfo => {
+                            if (adInfo.data && adInfo.data.data) {
+                                // Используем calculateAggregatedMetrics для получения метрик периода (как в таблицах)
+                                const adPeriodMetrics = calculateAggregatedMetrics(
+                                    adInfo.data.data,
+                                    0,
+                                    adInfo.data.data.dates.length - 1,
+                                    userStartDate,
+                                    userEndDate
+                                );
+
+                                totalLeads += adPeriodMetrics.totalLeads;
+                                totalSpend += parseFloat(adPeriodMetrics.totalSpend.replace(',', '.')) || 0;
+                                if (adPeriodMetrics.totalLeads > 0 || parseFloat(adPeriodMetrics.totalSpend.replace(',', '.')) > 0) {
+                                    activeDatesCount++;
+                                }
+                            }
+                        });
+                    });
+
+                    // Формируем финальные метрики как в колонке "Период"
+                    const avgCPL = totalLeads > 0 ? (totalSpend / totalLeads) : 0;
+                    videoPeriodMetrics = {
+                        avgCPL: avgCPL.toFixed(2).replace('.', ','),
+                        totalLeads: totalLeads,
+                        totalSpend: totalSpend.toFixed(2).replace('.', ',')
+                    };
+
+                    console.log(`📊 NAV: Video ${videoName} period metrics:`, videoPeriodMetrics);
+
                     html += `
-                    <div class="nav-tree-item level-0" onclick="navigateToElement('${buyerId}')">
+                    <div class="nav-tree-item level-0" onclick="navigateToElement('${videoId}')">
                         <div class="nav-item-content">
                             <div class="nav-item-header">
-                                <i class="fas fa-user-tie nav-icon"></i>
-                                <span class="nav-item-name">${escapeHtml(buyerName)}</span>
+                                <i class="fas fa-video nav-icon"></i>
+                                <span class="nav-item-name">${escapeHtml(videoName)}</span>
                             </div>
                             <div class="nav-item-metrics">
-                                <span class="nav-metric">Лиды: ${buyerPeriodMetrics.totalLeads}</span>
-                                <span class="nav-metric">CPL: ${buyerPeriodMetrics.avgCPL}</span>
-                                <span class="nav-metric">Расх.: ${buyerPeriodMetrics.totalSpend}</span>
+                                <span class="nav-metric">Лиды: ${videoPeriodMetrics.totalLeads}</span>
+                                <span class="nav-metric">CPL: ${videoPeriodMetrics.avgCPL}</span>
+                                <span class="nav-metric">Расх.: ${videoPeriodMetrics.totalSpend}</span>
                             </div>
                         </div>
-                        <span class="nav-tree-toggle" onclick="event.stopPropagation(); toggleNavTree('${targetPrefix}_buyer_${buyerIndex}')">▸</span>
+                        <span class="nav-tree-toggle" onclick="event.stopPropagation(); toggleNavTree('${targetPrefix}_video_${videoIndex}')">▸</span>
                     </div>
-                    <div class="nav-tree-children collapsed" id="${targetPrefix}_buyer_${buyerIndex}_children">
+                    <div class="nav-tree-children collapsed" id="${targetPrefix}_video_${videoIndex}_children">
                 `;
 
-                    Object.keys(buyerData.campaigns || {}).forEach((campaignName, campaignIndex) => {
-                        const campaignData = buyerData.campaigns[campaignName];
+                    Object.keys(videoData.campaigns || {}).forEach((campaignName, campaignIndex) => {
+                        const campaignStructure = videoData.campaigns[campaignName];
                         const cleanCampaignName = cleanName(campaignName, campaignIndex, 'campaign');
-                        const campaignId = `${targetPrefix}_campaign_${cleanBuyerName}_${cleanCampaignName}_${campaignIndex}`;
+                        const campaignId = `${targetPrefix}_campaign_${cleanVideoName}_${cleanCampaignName}_${campaignIndex}`;
 
                         console.log(`🔍 NAV: Creating campaign link for ${targetPrefix}:`, campaignName, '→', campaignId);
 
-                        // Расчет метрик для кампании за выбранный период
+                        // Расчет метрик для кампании за выбранный период - используем данные из таблицы "Период"
                         let campaignPeriodMetrics = { avgCPL: "0,00", totalLeads: 0, totalSpend: "0,00" };
-                        if (campaignData.campaignData && campaignData.campaignData.data) {
-                            // ВАЖНО: используем точно такие же параметры как в календаре метрик
-                            campaignPeriodMetrics = calculateAggregatedMetrics(
-                                campaignData.campaignData.data,
-                                0,
-                                campaignData.campaignData.data.dates.length - 1,
-                                userStartDate,
-                                userEndDate
-                            );
-                            console.log(`📊 NAV: Campaign ${campaignName} period metrics:`, campaignPeriodMetrics);
-                        }
+
+                        // Агрегируем данные кампании из объявлений с этим видео (как в таблице "Период")
+                        const campaignAds = campaignStructure.ads;
+                        let totalLeads = 0;
+                        let totalSpend = 0;
+
+                        campaignAds.forEach(adInfo => {
+                            if (adInfo.data && adInfo.data.data) {
+                                // Используем calculateAggregatedMetrics для получения метрик периода (как в таблицах)
+                                const adPeriodMetrics = calculateAggregatedMetrics(
+                                    adInfo.data.data,
+                                    0,
+                                    adInfo.data.data.dates.length - 1,
+                                    userStartDate,
+                                    userEndDate
+                                );
+
+                                totalLeads += adPeriodMetrics.totalLeads;
+                                totalSpend += parseFloat(adPeriodMetrics.totalSpend.replace(',', '.')) || 0;
+                            }
+                        });
+
+                        // Формируем финальные метрики как в колонке "Период"
+                        const avgCPL = totalLeads > 0 ? (totalSpend / totalLeads) : 0;
+                        campaignPeriodMetrics = {
+                            avgCPL: avgCPL.toFixed(2).replace('.', ','),
+                            totalLeads: totalLeads,
+                            totalSpend: totalSpend.toFixed(2).replace('.', ',')
+                        };
+
+                        console.log(`📊 NAV: Campaign ${campaignName} period metrics:`, campaignPeriodMetrics);
 
                         html += `
                         <div class="nav-tree-item level-1" onclick="navigateToElement('${campaignId}')">
@@ -4226,31 +4343,51 @@
                                     <span class="nav-metric">Расх.: ${campaignPeriodMetrics.totalSpend}</span>
                                 </div>
                             </div>
-                            <span class="nav-tree-toggle" onclick="event.stopPropagation(); toggleNavTree('${targetPrefix}_campaign_${buyerIndex}_${campaignIndex}')">▸</span>
+                            <span class="nav-tree-toggle" onclick="event.stopPropagation(); toggleNavTree('${targetPrefix}_campaign_${videoIndex}_${campaignIndex}')">▸</span>
                         </div>
-                        <div class="nav-tree-children collapsed" id="${targetPrefix}_campaign_${buyerIndex}_${campaignIndex}_children">
+                        <div class="nav-tree-children collapsed" id="${targetPrefix}_campaign_${videoIndex}_${campaignIndex}_children">
                     `;
 
-                        Object.keys(campaignData.groups || {}).forEach((groupName, groupIndex) => {
-                            const groupData = campaignData.groups[groupName];
+                        Object.keys(campaignStructure.groups || {}).forEach((groupName, groupIndex) => {
+                            const groupStructure = campaignStructure.groups[groupName];
                             const cleanGroupName = cleanName(groupName, groupIndex, 'group');
-                            const groupId = `${targetPrefix}_group_${cleanBuyerName}_${cleanCampaignName}_${cleanGroupName}_${groupIndex}`;
+                            const groupId = `${targetPrefix}_group_${cleanVideoName}_${cleanCampaignName}_${cleanGroupName}_${groupIndex}`;
 
                             console.log(`🔍 NAV: Creating group link for ${targetPrefix}:`, groupName, '→', groupId);
 
-                            // Расчет метрик для группы за выбранный период
+                            // Расчет метрик для группы за выбранный период - используем данные из таблицы "Период"
                             let groupPeriodMetrics = { avgCPL: "0,00", totalLeads: 0, totalSpend: "0,00" };
-                            if (groupData.groupData && groupData.groupData.data) {
-                                // ВАЖНО: используем точно такие же параметры как в календаре метрик
-                                groupPeriodMetrics = calculateAggregatedMetrics(
-                                    groupData.groupData.data,
-                                    0,
-                                    groupData.groupData.data.dates.length - 1,
-                                    userStartDate,
-                                    userEndDate
-                                );
-                                console.log(`📊 NAV: Group ${groupName} period metrics:`, groupPeriodMetrics);
-                            }
+
+                            // Агрегируем данные группы из объявлений (как в таблице "Период")
+                            const groupAds = campaignAds.filter(ad => ad.groupName === groupName);
+                            let totalLeads = 0;
+                            let totalSpend = 0;
+
+                            groupAds.forEach(adInfo => {
+                                if (adInfo.data && adInfo.data.data) {
+                                    // Используем calculateAggregatedMetrics для получения метрик периода (как в таблицах)
+                                    const adPeriodMetrics = calculateAggregatedMetrics(
+                                        adInfo.data.data,
+                                        0,
+                                        adInfo.data.data.dates.length - 1,
+                                        userStartDate,
+                                        userEndDate
+                                    );
+
+                                    totalLeads += adPeriodMetrics.totalLeads;
+                                    totalSpend += parseFloat(adPeriodMetrics.totalSpend.replace(',', '.')) || 0;
+                                }
+                            });
+
+                            // Формируем финальные метрики как в колонке "Период"
+                            const avgCPL = totalLeads > 0 ? (totalSpend / totalLeads) : 0;
+                            groupPeriodMetrics = {
+                                avgCPL: avgCPL.toFixed(2).replace('.', ','),
+                                totalLeads: totalLeads,
+                                totalSpend: totalSpend.toFixed(2).replace('.', ',')
+                            };
+
+                            console.log(`📊 NAV: Group ${groupName} period metrics:`, groupPeriodMetrics);
 
                             html += `
                             <div class="nav-tree-item level-2" onclick="navigateToElement('${groupId}')">
@@ -4265,25 +4402,28 @@
                                         <span class="nav-metric">Расх.: ${groupPeriodMetrics.totalSpend}</span>
                                     </div>
                                 </div>
-                                <span class="nav-tree-toggle" onclick="event.stopPropagation(); toggleNavTree('${targetPrefix}_group_${buyerIndex}_${campaignIndex}_${groupIndex}')">▸</span>
+                                <span class="nav-tree-toggle" onclick="event.stopPropagation(); toggleNavTree('${targetPrefix}_group_${videoIndex}_${campaignIndex}_${groupIndex}')">▸</span>
                             </div>
-                            <div class="nav-tree-children collapsed" id="${targetPrefix}_group_${buyerIndex}_${campaignIndex}_${groupIndex}_children">
+                            <div class="nav-tree-children collapsed" id="${targetPrefix}_group_${videoIndex}_${campaignIndex}_${groupIndex}_children">
                         `;
 
-                            Object.keys(groupData.ads || {}).forEach((adName, adIndex) => {
+                            Object.keys(groupStructure.ads || {}).forEach((adName, adIndex) => {
                                 const cleanAdName = cleanName(adName, adIndex, 'ad');
-                                const adId = `${targetPrefix}_ad_${cleanBuyerName}_${cleanCampaignName}_${cleanGroupName}_${cleanAdName}_${adIndex}`;
+                                const adId = `${targetPrefix}_ad_${cleanVideoName}_${cleanCampaignName}_${cleanGroupName}_${cleanAdName}_${groupIndex}_${adIndex}`;
 
                                 console.log(`🔍 NAV: Creating ad link for ${targetPrefix}:`, adName, '→', adId);
 
-                                // Расчет метрик для объявления за выбранный период
+                                // Расчет метрик для объявления за выбранный период - используем данные из таблицы "Период"
                                 let adPeriodMetrics = { avgCPL: "0,00", totalLeads: 0, totalSpend: "0,00" };
-                                if (groupData.ads && groupData.ads[adName] && groupData.ads[adName].data) {
-                                    // ВАЖНО: используем точно такие же параметры как в календаре метрик
+
+                                // Находим объявление в списке
+                                const adInfo = groupAds.find(ad => ad.name === adName);
+                                if (adInfo && adInfo.data && adInfo.data.data) {
+                                    // Используем calculateAggregatedMetrics для получения метрик периода (как в таблицах)
                                     adPeriodMetrics = calculateAggregatedMetrics(
-                                        groupData.ads[adName].data,
+                                        adInfo.data.data,
                                         0,
-                                        groupData.ads[adName].data.dates.length - 1,
+                                        adInfo.data.data.dates.length - 1,
                                         userStartDate,
                                         userEndDate
                                     );
@@ -4637,7 +4777,7 @@
                         <span class="nav-block-toggle">▾</span>
                     </div>
                     <div class="nav-block-content" id="videosBlockContent">
-                        ${createBuyersNavigationStructure(buyerGroupsData, 'enhanced')}
+                        ${createCreativesNavigationStructure(buyerGroupsData, 'enhanced')}
                     </div>
                 </div>
             `;
