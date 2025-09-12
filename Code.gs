@@ -399,53 +399,53 @@ function buildChartForArticle(article, periodStart, periodEnd) {
             }
 
             if (rowIndex === 11) {
-            // Для Frequency вычисляем среднее значение исключая нули
-            if (valuesToConvert.length === 0) return "";
-            const numValues = valuesToConvert.filter(v => !isNaN(Number(v))).map(v => Number(v)).filter(v => v > 0);
-            if (numValues.length === 0) return "";
-            const avgValue = numValues.reduce((sum, val) => sum + val, 0) / numValues.length;
-            return formatValueByRow(avgValue, rowIndex);
-        }
-        
-        if (rowIndex === 14) {
-            // Для Кликов (переход) вычисляем сумму за день
-            if (valuesToConvert.length === 0) return "";
-            const numValues = valuesToConvert.filter(v => !isNaN(Number(v))).map(v => Number(v));
-            if (numValues.length === 0) return "";
-            const sumValue = numValues.reduce((sum, val) => sum + val, 0);
-            return formatValueByRow(Math.round(sumValue), rowIndex);
-        }
-        
-        if (rowIndex === 16) {
-            // Для Среднего времени воспроизведения видео вычисляем среднее значение исключая нули
-            if (valuesToConvert.length === 0) return "";
-            const numValues = valuesToConvert.filter(v => !isNaN(Number(v))).map(v => Number(v)).filter(v => v > 0);
-            if (numValues.length === 0) return "";
-            const avgValue = numValues.reduce((sum, val) => sum + val, 0) / numValues.length;
-            return formatValueByRow(avgValue, rowIndex);
-        }
-        
-        if (rowIndex === 19) {
-            // Для Бюджета группы объявлений вычисляем сумму за день
-            if (valuesToConvert.length === 0) return "";
-            const numValues = valuesToConvert.filter(v => !isNaN(Number(v))).map(v => Number(v));
-            if (numValues.length === 0) return "";
-            const sumValue = numValues.reduce((sum, val) => sum + val, 0);
-            return formatValueByRow(sumValue, rowIndex);
-        }
-        
-        if (rowIndex === 20) {
-            // Для Показов вычисляем сумму за день
-            if (valuesToConvert.length === 0) return "";
-            const numValues = valuesToConvert.filter(v => !isNaN(Number(v))).map(v => Number(v));
-            if (numValues.length === 0) return "";
-            const sumValue = numValues.reduce((sum, val) => sum + val, 0);
-            return formatValueByRow(Math.round(sumValue), rowIndex);
-        }
-        
-        return valuesToConvert
-            .map((v) => formatValueByRow(v, rowIndex))
-            .join("\n");
+                // Для Frequency вычисляем среднее значение исключая нули
+                if (valuesToConvert.length === 0) return "";
+                const numValues = valuesToConvert.filter(v => !isNaN(Number(v))).map(v => Number(v)).filter(v => v > 0);
+                if (numValues.length === 0) return "";
+                const avgValue = numValues.reduce((sum, val) => sum + val, 0) / numValues.length;
+                return formatValueByRow(avgValue, rowIndex);
+            }
+
+            if (rowIndex === 14) {
+                // Для Кликов (переход) вычисляем сумму за день
+                if (valuesToConvert.length === 0) return "";
+                const numValues = valuesToConvert.filter(v => !isNaN(Number(v))).map(v => Number(v));
+                if (numValues.length === 0) return "";
+                const sumValue = numValues.reduce((sum, val) => sum + val, 0);
+                return formatValueByRow(Math.round(sumValue), rowIndex);
+            }
+
+            if (rowIndex === 16) {
+                // Для Среднего времени воспроизведения видео вычисляем среднее значение исключая нули
+                if (valuesToConvert.length === 0) return "";
+                const numValues = valuesToConvert.filter(v => !isNaN(Number(v))).map(v => Number(v)).filter(v => v > 0);
+                if (numValues.length === 0) return "";
+                const avgValue = numValues.reduce((sum, val) => sum + val, 0) / numValues.length;
+                return formatValueByRow(avgValue, rowIndex);
+            }
+
+            if (rowIndex === 19) {
+                // Для Бюджета группы объявлений вычисляем сумму за день
+                if (valuesToConvert.length === 0) return "";
+                const numValues = valuesToConvert.filter(v => !isNaN(Number(v))).map(v => Number(v));
+                if (numValues.length === 0) return "";
+                const sumValue = numValues.reduce((sum, val) => sum + val, 0);
+                return formatValueByRow(sumValue, rowIndex);
+            }
+
+            if (rowIndex === 20) {
+                // Для Показов вычисляем сумму за день
+                if (valuesToConvert.length === 0) return "";
+                const numValues = valuesToConvert.filter(v => !isNaN(Number(v))).map(v => Number(v));
+                if (numValues.length === 0) return "";
+                const sumValue = numValues.reduce((sum, val) => sum + val, 0);
+                return formatValueByRow(Math.round(sumValue), rowIndex);
+            }
+
+            return valuesToConvert
+                .map((v) => formatValueByRow(v, rowIndex))
+                .join("\n");
         }
 
         function calculateRating(cpl, ratingThreshold) {
@@ -1740,7 +1740,7 @@ function buildChartForArticle(article, periodStart, periodEnd) {
             function trimSegmentPeriodBySpend(data) {
                 let firstActiveIndex = -1;
                 let lastActiveIndex = -1;
-                
+
                 // Ищем первый день с расходом > 0
                 for (let i = 0; i < data.spendDay.length; i++) {
                     if (data.spendDay[i] > 0) {
@@ -1748,7 +1748,7 @@ function buildChartForArticle(article, periodStart, periodEnd) {
                         break;
                     }
                 }
-                
+
                 // Ищем последний день с расходом > 0
                 for (let i = data.spendDay.length - 1; i >= 0; i--) {
                     if (data.spendDay[i] > 0) {
@@ -1756,11 +1756,11 @@ function buildChartForArticle(article, periodStart, periodEnd) {
                         break;
                     }
                 }
-                
+
                 if (firstActiveIndex === -1 || lastActiveIndex === -1) {
                     return data; // Нет активных дней
                 }
-                
+
                 // Обрезаем все массивы данных
                 const trimmedData = {};
                 Object.keys(data).forEach(key => {
@@ -1770,10 +1770,10 @@ function buildChartForArticle(article, periodStart, periodEnd) {
                         trimmedData[key] = data[key];
                     }
                 });
-                
+
                 return trimmedData;
             }
-            
+
             // Применяем обрезку к данным сегмента
             Object.assign(segmentData, trimSegmentPeriodBySpend(segmentData));
 
@@ -2127,33 +2127,33 @@ function buildChartForArticle(article, periodStart, periodEnd) {
 
         // Создаем новые массивы с диапазонами
         const newGeneralData = {
-                dates: [],
-                ratings: [],
-                cplDay: [],
-                leadsDay: [],
-                spendDay: [],
-                costFromSourcesDay: [],
-                conversionDay: [],
-                maxCPL: [],
-                cplCumulative: [],
-                cplCumulativeColors: [],
-                cplCumulativeArrows: [],
-                groups: [],
-                buyers: [],
-                accounts: [],
-                freq: [],
-                ctr: [],
-                cpm: [],
-                linkClicks: [],
-                cpc: [],
-                avgWatchTime: [],
-                videoName: [],
-                siteUrl: [],
-                budget: [],
-                impressions: [],
-                columnSpans: [],
-                columnClasses: [],
-            };
+            dates: [],
+            ratings: [],
+            cplDay: [],
+            leadsDay: [],
+            spendDay: [],
+            costFromSourcesDay: [],
+            conversionDay: [],
+            maxCPL: [],
+            cplCumulative: [],
+            cplCumulativeColors: [],
+            cplCumulativeArrows: [],
+            groups: [],
+            buyers: [],
+            accounts: [],
+            freq: [],
+            ctr: [],
+            cpm: [],
+            linkClicks: [],
+            cpc: [],
+            avgWatchTime: [],
+            videoName: [],
+            siteUrl: [],
+            budget: [],
+            impressions: [],
+            columnSpans: [],
+            columnClasses: [],
+        };
 
         dateRanges.forEach((range) => {
             if (range.isZeroRange && range.startIndex !== range.endIndex) {
@@ -2401,188 +2401,188 @@ function buildChartForArticle(article, periodStart, periodEnd) {
             }
 
             // Создаем структуру кампании
-if (campaignName && !calendarData[trackerName].campaigns[campaignName]) {
-    calendarData[trackerName].campaigns[campaignName] = {
-        dates: [],
-        cpl: [],
-        leads: [],
-        spend: [],
-        videoNames: [],
-        clicks: [],
-        impressions: [],
-        ctr: [],
-        cpc: [],
-        cpm: [],
-        groups: {}
-    };
-}
+            if (campaignName && !calendarData[trackerName].campaigns[campaignName]) {
+                calendarData[trackerName].campaigns[campaignName] = {
+                    dates: [],
+                    cpl: [],
+                    leads: [],
+                    spend: [],
+                    videoNames: [],
+                    clicks: [],
+                    impressions: [],
+                    ctr: [],
+                    cpc: [],
+                    cpm: [],
+                    groups: {}
+                };
+            }
 
-// Создаем структуру группы
-if (campaignName && groupName && !calendarData[trackerName].campaigns[campaignName].groups[groupName]) {
-    calendarData[trackerName].campaigns[campaignName].groups[groupName] = {
-        dates: [],
-        cpl: [],
-        leads: [],
-        spend: [],
-        videoNames: [],
-        clicks: [],
-        impressions: [],
-        ctr: [],
-        cpc: [],
-        cpm: [],
-        ads: {}
-    };
-}
+            // Создаем структуру группы
+            if (campaignName && groupName && !calendarData[trackerName].campaigns[campaignName].groups[groupName]) {
+                calendarData[trackerName].campaigns[campaignName].groups[groupName] = {
+                    dates: [],
+                    cpl: [],
+                    leads: [],
+                    spend: [],
+                    videoNames: [],
+                    clicks: [],
+                    impressions: [],
+                    ctr: [],
+                    cpc: [],
+                    cpm: [],
+                    ads: {}
+                };
+            }
 
-// Создаем структуру объявления
-if (campaignName && groupName && adName && !calendarData[trackerName].campaigns[campaignName].groups[groupName].ads[adName]) {
-    calendarData[trackerName].campaigns[campaignName].groups[groupName].ads[adName] = {
-        dates: [],
-        cpl: [],
-        leads: [],
-        spend: [],
-        videoNames: [],
-        clicks: [],
-        impressions: [],
-        ctr: [],
-        cpc: [],
-        cpm: []
-    };
-}
+            // Создаем структуру объявления
+            if (campaignName && groupName && adName && !calendarData[trackerName].campaigns[campaignName].groups[groupName].ads[adName]) {
+                calendarData[trackerName].campaigns[campaignName].groups[groupName].ads[adName] = {
+                    dates: [],
+                    cpl: [],
+                    leads: [],
+                    spend: [],
+                    videoNames: [],
+                    clicks: [],
+                    impressions: [],
+                    ctr: [],
+                    cpc: [],
+                    cpm: []
+                };
+            }
         });
 
         // Заполняем данные по датам
-Object.keys(calendarData).forEach(trackerName => {
-    const trackerData = calendarData[trackerName];
-    trackerData.dates.sort((a, b) => {
-    const [dayA, monthA, yearA] = a.split('.').map(Number);
-    const [dayB, monthB, yearB] = b.split('.').map(Number);
-    return yearA - yearB || monthA - monthB || dayA - dayB;
-});
-
-    Object.keys(trackerData.campaigns).forEach(campaignName => {
-        const campaignData = trackerData.campaigns[campaignName];
-
-        // Инициализируем массивы для всех дат
-        trackerData.dates.forEach(date => {
-            campaignData.dates.push(date);
-            campaignData.cpl.push(0);
-            campaignData.leads.push(0);
-            campaignData.spend.push(0);
-            campaignData.videoNames.push('');
-            campaignData.clicks.push(0);
-            campaignData.impressions.push(0);
-            campaignData.ctr.push(0);
-            campaignData.cpc.push(0);
-            campaignData.cpm.push(0);
-        });
-
-        Object.keys(campaignData.groups).forEach(groupName => {
-            const groupData = campaignData.groups[groupName];
-
-            trackerData.dates.forEach(date => {
-                groupData.dates.push(date);
-                groupData.cpl.push(0);
-                groupData.leads.push(0);
-                groupData.spend.push(0);
-                groupData.videoNames.push('');
-                groupData.clicks.push(0);
-                groupData.impressions.push(0);
-                groupData.ctr.push(0);
-                groupData.cpc.push(0);
-                groupData.cpm.push(0);
+        Object.keys(calendarData).forEach(trackerName => {
+            const trackerData = calendarData[trackerName];
+            trackerData.dates.sort((a, b) => {
+                const [dayA, monthA, yearA] = a.split('.').map(Number);
+                const [dayB, monthB, yearB] = b.split('.').map(Number);
+                return yearA - yearB || monthA - monthB || dayA - dayB;
             });
 
-            Object.keys(groupData.ads).forEach(adName => {
-                const adData = groupData.ads[adName];
+            Object.keys(trackerData.campaigns).forEach(campaignName => {
+                const campaignData = trackerData.campaigns[campaignName];
 
+                // Инициализируем массивы для всех дат
                 trackerData.dates.forEach(date => {
-                    adData.dates.push(date);
-                    adData.cpl.push(0);
-                    adData.leads.push(0);
-                    adData.spend.push(0);
-                    adData.videoNames.push('');
-                    adData.clicks.push(0);
-                    adData.impressions.push(0);
-                    adData.ctr.push(0);
-                    adData.cpc.push(0);
-                    adData.cpm.push(0);
+                    campaignData.dates.push(date);
+                    campaignData.cpl.push(0);
+                    campaignData.leads.push(0);
+                    campaignData.spend.push(0);
+                    campaignData.videoNames.push('');
+                    campaignData.clicks.push(0);
+                    campaignData.impressions.push(0);
+                    campaignData.ctr.push(0);
+                    campaignData.cpc.push(0);
+                    campaignData.cpm.push(0);
+                });
+
+                Object.keys(campaignData.groups).forEach(groupName => {
+                    const groupData = campaignData.groups[groupName];
+
+                    trackerData.dates.forEach(date => {
+                        groupData.dates.push(date);
+                        groupData.cpl.push(0);
+                        groupData.leads.push(0);
+                        groupData.spend.push(0);
+                        groupData.videoNames.push('');
+                        groupData.clicks.push(0);
+                        groupData.impressions.push(0);
+                        groupData.ctr.push(0);
+                        groupData.cpc.push(0);
+                        groupData.cpm.push(0);
+                    });
+
+                    Object.keys(groupData.ads).forEach(adName => {
+                        const adData = groupData.ads[adName];
+
+                        trackerData.dates.forEach(date => {
+                            adData.dates.push(date);
+                            adData.cpl.push(0);
+                            adData.leads.push(0);
+                            adData.spend.push(0);
+                            adData.videoNames.push('');
+                            adData.clicks.push(0);
+                            adData.impressions.push(0);
+                            adData.ctr.push(0);
+                            adData.cpc.push(0);
+                            adData.cpm.push(0);
+                        });
+                    });
                 });
             });
         });
-    });
-});
 
         // Заполняем фактические данные
-allRows.forEach((row) => {
-    const trackerName = String(row.campaign_name_tracker || "").trim();
-    const campaignName = String(row.campaign_name || "").trim();
-    const groupName = String(row.adv_group_name || "").trim();
-    const adName = String(row.adv_name || "").trim();
-    const videoName = String(row.video_name || "").trim();
-    const dateObj = new Date(row.adv_date);
+        allRows.forEach((row) => {
+            const trackerName = String(row.campaign_name_tracker || "").trim();
+            const campaignName = String(row.campaign_name || "").trim();
+            const groupName = String(row.adv_group_name || "").trim();
+            const adName = String(row.adv_name || "").trim();
+            const videoName = String(row.video_name || "").trim();
+            const dateObj = new Date(row.adv_date);
 
-    if (isNaN(dateObj.getTime()) || !trackerName.includes(article)) return;
+            if (isNaN(dateObj.getTime()) || !trackerName.includes(article)) return;
 
-    const dateStr = Utilities.formatDate(dateObj, "Europe/Kiev", "dd.MM.yyyy");
-    const leads = Number(row.valid) || 0;
-    const spend = Number(row.cost) || 0;
-    const clicks = Number(row.clicks_on_link_tracker) || 0;
-    const impressions = Number(row.showed) || 0;
-    const cpl = leads > 0 ? spend / leads : 0;
-    const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
-    const cpc = clicks > 0 ? spend / clicks : 0;
-    const cpm = impressions > 0 ? (spend / impressions) * 1000 : 0;
+            const dateStr = Utilities.formatDate(dateObj, "Europe/Kiev", "dd.MM.yyyy");
+            const leads = Number(row.valid) || 0;
+            const spend = Number(row.cost) || 0;
+            const clicks = Number(row.clicks_on_link_tracker) || 0;
+            const impressions = Number(row.showed) || 0;
+            const cpl = leads > 0 ? spend / leads : 0;
+            const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+            const cpc = clicks > 0 ? spend / clicks : 0;
+            const cpm = impressions > 0 ? (spend / impressions) * 1000 : 0;
 
-    if (calendarData[trackerName]) {
-        const dateIndex = calendarData[trackerName].dates.indexOf(dateStr);
+            if (calendarData[trackerName]) {
+                const dateIndex = calendarData[trackerName].dates.indexOf(dateStr);
 
-        if (dateIndex >= 0 && campaignName && calendarData[trackerName].campaigns[campaignName]) {
-            const campaignData = calendarData[trackerName].campaigns[campaignName];
-            campaignData.cpl[dateIndex] += cpl;
-            campaignData.leads[dateIndex] += leads;
-            campaignData.spend[dateIndex] += spend;
-            campaignData.clicks[dateIndex] += clicks;
-            campaignData.impressions[dateIndex] += impressions;
-            campaignData.ctr[dateIndex] = campaignData.impressions[dateIndex] > 0 ? (campaignData.clicks[dateIndex] / campaignData.impressions[dateIndex]) * 100 : 0;
-            campaignData.cpc[dateIndex] = campaignData.clicks[dateIndex] > 0 ? campaignData.spend[dateIndex] / campaignData.clicks[dateIndex] : 0;
-            campaignData.cpm[dateIndex] = campaignData.impressions[dateIndex] > 0 ? (campaignData.spend[dateIndex] / campaignData.impressions[dateIndex]) * 1000 : 0;
-            if (videoName && !campaignData.videoNames[dateIndex]) {
-                campaignData.videoNames[dateIndex] = videoName;
-            }
+                if (dateIndex >= 0 && campaignName && calendarData[trackerName].campaigns[campaignName]) {
+                    const campaignData = calendarData[trackerName].campaigns[campaignName];
+                    campaignData.cpl[dateIndex] += cpl;
+                    campaignData.leads[dateIndex] += leads;
+                    campaignData.spend[dateIndex] += spend;
+                    campaignData.clicks[dateIndex] += clicks;
+                    campaignData.impressions[dateIndex] += impressions;
+                    campaignData.ctr[dateIndex] = campaignData.impressions[dateIndex] > 0 ? (campaignData.clicks[dateIndex] / campaignData.impressions[dateIndex]) * 100 : 0;
+                    campaignData.cpc[dateIndex] = campaignData.clicks[dateIndex] > 0 ? campaignData.spend[dateIndex] / campaignData.clicks[dateIndex] : 0;
+                    campaignData.cpm[dateIndex] = campaignData.impressions[dateIndex] > 0 ? (campaignData.spend[dateIndex] / campaignData.impressions[dateIndex]) * 1000 : 0;
+                    if (videoName && !campaignData.videoNames[dateIndex]) {
+                        campaignData.videoNames[dateIndex] = videoName;
+                    }
 
-            if (groupName && campaignData.groups[groupName]) {
-                const groupData = campaignData.groups[groupName];
-                groupData.cpl[dateIndex] += cpl;
-                groupData.leads[dateIndex] += leads;
-                groupData.spend[dateIndex] += spend;
-                groupData.clicks[dateIndex] += clicks;
-                groupData.impressions[dateIndex] += impressions;
-                groupData.ctr[dateIndex] = groupData.impressions[dateIndex] > 0 ? (groupData.clicks[dateIndex] / groupData.impressions[dateIndex]) * 100 : 0;
-                groupData.cpc[dateIndex] = groupData.clicks[dateIndex] > 0 ? groupData.spend[dateIndex] / groupData.clicks[dateIndex] : 0;
-                groupData.cpm[dateIndex] = groupData.impressions[dateIndex] > 0 ? (groupData.spend[dateIndex] / groupData.impressions[dateIndex]) * 1000 : 0;
-                if (videoName && !groupData.videoNames[dateIndex]) {
-                    groupData.videoNames[dateIndex] = videoName;
-                }
+                    if (groupName && campaignData.groups[groupName]) {
+                        const groupData = campaignData.groups[groupName];
+                        groupData.cpl[dateIndex] += cpl;
+                        groupData.leads[dateIndex] += leads;
+                        groupData.spend[dateIndex] += spend;
+                        groupData.clicks[dateIndex] += clicks;
+                        groupData.impressions[dateIndex] += impressions;
+                        groupData.ctr[dateIndex] = groupData.impressions[dateIndex] > 0 ? (groupData.clicks[dateIndex] / groupData.impressions[dateIndex]) * 100 : 0;
+                        groupData.cpc[dateIndex] = groupData.clicks[dateIndex] > 0 ? groupData.spend[dateIndex] / groupData.clicks[dateIndex] : 0;
+                        groupData.cpm[dateIndex] = groupData.impressions[dateIndex] > 0 ? (groupData.spend[dateIndex] / groupData.impressions[dateIndex]) * 1000 : 0;
+                        if (videoName && !groupData.videoNames[dateIndex]) {
+                            groupData.videoNames[dateIndex] = videoName;
+                        }
 
-                if (adName && groupData.ads[adName]) {
-                    const adData = groupData.ads[adName];
-                    adData.cpl[dateIndex] += cpl;
-                    adData.leads[dateIndex] += leads;
-                    adData.spend[dateIndex] += spend;
-                    adData.clicks[dateIndex] += clicks;
-                    adData.impressions[dateIndex] += impressions;
-                    adData.ctr[dateIndex] = adData.impressions[dateIndex] > 0 ? (adData.clicks[dateIndex] / adData.impressions[dateIndex]) * 100 : 0;
-                    adData.cpc[dateIndex] = adData.clicks[dateIndex] > 0 ? adData.spend[dateIndex] / adData.clicks[dateIndex] : 0;
-                    adData.cpm[dateIndex] = adData.impressions[dateIndex] > 0 ? (adData.spend[dateIndex] / adData.impressions[dateIndex]) * 1000 : 0;
-                    if (videoName && !adData.videoNames[dateIndex]) {
-                        adData.videoNames[dateIndex] = videoName;
+                        if (adName && groupData.ads[adName]) {
+                            const adData = groupData.ads[adName];
+                            adData.cpl[dateIndex] += cpl;
+                            adData.leads[dateIndex] += leads;
+                            adData.spend[dateIndex] += spend;
+                            adData.clicks[dateIndex] += clicks;
+                            adData.impressions[dateIndex] += impressions;
+                            adData.ctr[dateIndex] = adData.impressions[dateIndex] > 0 ? (adData.clicks[dateIndex] / adData.impressions[dateIndex]) * 100 : 0;
+                            adData.cpc[dateIndex] = adData.clicks[dateIndex] > 0 ? adData.spend[dateIndex] / adData.clicks[dateIndex] : 0;
+                            adData.cpm[dateIndex] = adData.impressions[dateIndex] > 0 ? (adData.spend[dateIndex] / adData.impressions[dateIndex]) * 1000 : 0;
+                            if (videoName && !adData.videoNames[dateIndex]) {
+                                adData.videoNames[dateIndex] = videoName;
+                            }
+                        }
                     }
                 }
             }
-        }
-    }
-});
+        });
 
         const finalResult = {
             article: article,
