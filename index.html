@@ -6270,8 +6270,8 @@
 
                                                         // ИСПРАВЛЕНО: Создаем уникальный ID включающий группу для избежания дублирования
                                                         const adId = `enhanced_ad_${cleanVideoName}_${cleanCampaignName}_${cleanGroupName}_${cleanAdName}_${groupIndex}_${adIndex}`;
-                                                        const adChartId = `chart_${adId}`;
-                                                        const adTableId = `table_${adId}`;
+                                                        const adChartId = `chart_enhanced_ad_${cleanVideoName}_${cleanCampaignName}_${cleanGroupName}_${cleanAdName}_${groupIndex}_${adIndex}`;
+                                                        const adTableId = `table_enhanced_ad_${cleanVideoName}_${cleanCampaignName}_${cleanGroupName}_${cleanAdName}_${groupIndex}_${adIndex}`;
 
                                                         return `
                                   <div class="nested-group-enhanced" style="margin-left: 48px; margin-top: 12px;">
@@ -6718,13 +6718,13 @@
                                                     cleanAdName = `ad_${adIndex}`;
                                                 }
 
-                                                const adId = `enhanced_ad_${cleanVideoName}_${cleanCampaignName}_${cleanGroupName}_${cleanAdName}_${adIndex}`;
-                                                const adChartId = `chart_${adId}`;
-                                                const adTableId = `table_${adId}`;
+                                                const adId = `enhanced_ad_${cleanVideoName}_${cleanCampaignName}_${cleanGroupName}_${cleanAdName}_${groupIndex}_${adIndex}`;
+                                                const adChartId = `chart_enhanced_ad_${cleanVideoName}_${cleanCampaignName}_${cleanGroupName}_${cleanAdName}_${groupIndex}_${adIndex}`;
+                                                const adTableId = `table_enhanced_ad_${cleanVideoName}_${cleanCampaignName}_${cleanGroupName}_${cleanAdName}_${groupIndex}_${adIndex}`;
 
                                                 // ИСПРАВЛЕНО: Создаем график и таблицу для объявления с учетом группы
                                                         if (adData) {
-                                                            (function (aName, aData, aChartId, aTableId, vName, cName, gName, aIndex) {
+                                                            (function (aName, aData, aChartId, aTableId, vName, cName, gName, gIdx, aIdx) {
                                                                 console.log(`📊 CREATING AD CHART/TABLE: ${aName} in group ${gName}, chartId: ${aChartId}, tableId: ${aTableId}`);
                                                                 displaySegmentTable(aTableId, aData.data, "ad", userStartDate, userEndDate);
                                                                 displaySegmentChart(
@@ -6733,7 +6733,7 @@
                                                                     `${vName} → ${cName} → ${gName} → ${aName}`,
                                                                     aData.data
                                                                 );
-                                                            })(adName, adData, adChartId, adTableId, videoName, campaignName, groupName, adIndex);
+                                                            })(adName, adData, adChartId, adTableId, videoName, campaignName, groupName, groupIndex, adIndex);
                                                         }
                                             }
                                         );
