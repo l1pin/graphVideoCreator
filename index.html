@@ -2458,6 +2458,415 @@
     <script>
         let currentCharts = [];
 
+        // ИСПРАВЛЕНО: Функции фильтрации данных по иерархии
+        function filterCampaignDataByVideo(campaignData, videoName) {
+            console.log(`🔍 FILTER: Filtering campaign data for video: ${videoName}`);
+            
+            const filteredData = {
+                dates: [...campaignData.dates],
+                ratings: [],
+                cplDay: [],
+                leadsDay: [],
+                spendDay: [],
+                costFromSourcesDay: [],
+                conversionDay: [],
+                maxCPL: [...campaignData.maxCPL],
+                cplCumulative: [],
+                cplCumulativeColors: [],
+                cplCumulativeArrows: [],
+                freq: [],
+                ctr: [],
+                cpm: [],
+                linkClicks: [],
+                cpc: [],
+                avgWatchTime: [],
+                videoName: [],
+                siteUrl: [],
+                budget: [],
+                impressions: [],
+                columnClasses: [...(campaignData.columnClasses || [])],
+                columnSpans: [...(campaignData.columnSpans || [])]
+            };
+            
+            // Фильтруем каждый день - берем данные только если видео совпадает
+            for (let i = 0; i < campaignData.dates.length; i++) {
+                const dayVideoNames = campaignData.videoName[i] || "";
+                const videoNamesArray = dayVideoNames.split('\n').filter(name => name.trim() !== '');
+                
+                // Проверяем есть ли наше видео в этот день
+                const hasOurVideo = videoNamesArray.some(name => name.trim() === videoName.trim());
+                
+                if (hasOurVideo && videoNamesArray.length > 1) {
+                    // ИСПРАВЛЕНО: Если несколько видео в день, берем пропорциональную часть
+                    const videoShare = 1 / videoNamesArray.length;
+                    
+                    filteredData.leadsDay.push(Math.round((campaignData.leadsDay[i] || 0) * videoShare));
+                    filteredData.spendDay.push((campaignData.spendDay[i] || 0) * videoShare);
+                    filteredData.costFromSourcesDay.push((campaignData.costFromSourcesDay ? (campaignData.costFromSourcesDay[i] || 0) : 0) * videoShare);
+                    
+                    // Для строковых полей показываем только наше видео
+                    filteredData.videoName.push(videoName.trim());
+                } else if (hasOurVideo) {
+                    // Если только наше видео - берем все данные
+                    filteredData.leadsDay.push(campaignData.leadsDay[i] || 0);
+                    filteredData.spendDay.push(campaignData.spendDay[i] || 0);
+                    filteredData.costFromSourcesDay.push(campaignData.costFromSourcesDay ? (campaignData.costFromSourcesDay[i] || 0) : 0);
+                    filteredData.videoName.push(videoName.trim());
+                } else {
+                    // Если нашего видео нет - нули
+                    filteredData.leadsDay.push(0);
+                    filteredData.spendDay.push(0);
+                    filteredData.costFromSourcesDay.push(0);
+                    filteredData.videoName.push("");
+                }
+                
+                // Копируем остальные метрики как есть
+                const dayLeads = filteredData.leadsDay[i];
+                const daySpend = filteredData.spendDay[i];
+                const dayCpl = dayLeads > 0 ? daySpend / dayLeads : 0;
+                
+                filteredData.cplDay.push(dayCpl);
+                filteredData.ratings.push(campaignData.ratings[i] || "");
+                filteredData.conversionDay.push(campaignData.conversionDay[i] || "");
+                filteredData.freq.push(campaignData.freq[i] || "");
+                filteredData.ctr.push(campaignData.ctr[i] || "");
+                filteredData.cpm.push(campaignData.cpm[i] || "");
+                filteredData.linkClicks.push(campaignData.linkClicks[i] || "");
+                filteredData.cpc.push(campaignData.cpc[i] || "");
+                filteredData.avgWatchTime.push(campaignData.avgWatchTime[i] || "");
+                filteredData.siteUrl.push(campaignData.siteUrl[i] || "");
+                filteredData.budget.push(campaignData.budget[i] || "");
+                filteredData.impressions.push(campaignData.impressions[i] || "");
+            }
+            
+            // Пересчитываем cplCumulative для отфильтрованных данных
+            let aggCost = 0, aggLeads = 0, prevDayGood = null;
+            const displayMaxCPL = 3.5;
+            
+            for (let i = 0; i < filteredData.dates.length; i++) {
+                const dayLeads = filteredData.leadsDay[i];
+                const daySpend = filteredData.spendDay[i];
+                
+                if (dayLeads === 0 && daySpend === 0) {
+                    aggCost = 0;
+                    aggLeads = 0;
+                    filteredData.cplCumulative.push(0);
+                    filteredData.cplCumulativeColors.push("gray");
+                    filteredData.cplCumulativeArrows.push("");
+                    prevDayGood = null;
+                } else {
+                    const dayCpl = dayLeads > 0 ? daySpend / dayLeads : 0;
+                    const dayIsGood = dayLeads > 0 && dayCpl <= displayMaxCPL;
+
+                    let arrow = "";
+                    if (prevDayGood !== null && prevDayGood !== dayIsGood) {
+                        arrow = dayIsGood ? "↗" : "↘";
+                    }
+
+                    if (prevDayGood !== null && prevDayGood !== dayIsGood) {
+                        aggCost = daySpend;
+                        aggLeads = dayLeads;
+                    } else {
+                        aggCost += daySpend;
+                        aggLeads += dayLeads;
+                    }
+
+                    const finalCpl = aggLeads > 0 ? aggCost / aggLeads : 0;
+                    filteredData.cplCumulative.push(finalCpl);
+                    filteredData.cplCumulativeColors.push(dayIsGood ? "green" : "red");
+                    filteredData.cplCumulativeArrows.push(arrow);
+
+                    prevDayGood = dayIsGood;
+                }
+            }
+            
+            console.log(`✅ FILTER: Filtered campaign data - total leads: ${filteredData.leadsDay.reduce((a,b) => a+b, 0)}`);
+            return filteredData;
+        }
+
+        function filterGroupDataByVideoAndCampaign(groupData, videoName, campaignName) {
+            console.log(`🔍 FILTER: Filtering group data for video: ${videoName}, campaign: ${campaignName}`);
+            // Группы уже должны быть правильно отфильтрованы на уровне создания данных
+            // Но добавим дополнительную проверку если нужно
+            return groupData;
+        }
+
+        // ИСПРАВЛЕНО: Функция агрегации данных из объявлений для кампаний и групп
+        function aggregateDataFromAds(adsArray, videoName, level) {
+            console.log(`📊 AGGREGATE: Aggregating ${adsArray.length} ads for ${level} with video ${videoName}`);
+            
+            if (adsArray.length === 0) {
+                console.log(`⚠️ AGGREGATE: No ads found for ${level} with video ${videoName}`);
+                return createEmptyDataStructure();
+            }
+            
+            // Собираем все уникальные даты из объявлений
+            const allDates = new Set();
+            adsArray.forEach(adInfo => {
+                if (adInfo.data && adInfo.data.data && adInfo.data.data.dates) {
+                    adInfo.data.data.dates.forEach(date => allDates.add(date));
+                }
+            });
+            
+            const sortedDates = Array.from(allDates).sort((a, b) => {
+                const [dayA, monthA, yearA] = a.split('.').map(Number);
+                const [dayB, monthB, yearB] = b.split('.').map(Number);
+                return yearA - yearB || monthA - monthB || dayA - dayB;
+            });
+            
+            console.log(`📊 AGGREGATE: Processing ${sortedDates.length} dates for ${level}`);
+            
+            // Создаем агрегированную структуру данных
+            const aggregatedData = {
+                dates: sortedDates,
+                ratings: [],
+                cplDay: [],
+                leadsDay: [],
+                spendDay: [],
+                costFromSourcesDay: [],
+                conversionDay: [],
+                maxCPL: [],
+                cplCumulative: [],
+                cplCumulativeColors: [],
+                cplCumulativeArrows: [],
+                freq: [],
+                ctr: [],
+                cpm: [],
+                linkClicks: [],
+                cpc: [],
+                avgWatchTime: [],
+                videoName: [],
+                siteUrl: [],
+                budget: [],
+                impressions: []
+            };
+            
+            // Агрегируем данные по дням
+            let aggCost = 0, aggLeads = 0, prevDayGood = null;
+            const displayMaxCPL = 3.5;
+            
+            sortedDates.forEach(date => {
+                let dayLeads = 0, daySpend = 0, dayCostFromSources = 0;
+                let dayClicks = 0, dayImpressions = 0;
+                let dayFreqValues = [], dayVideoNames = [], daySiteUrls = [], dayBudgetValues = [], dayAvgWatchTimeValues = [];
+                
+                // Собираем данные из всех объявлений для этой даты
+                adsArray.forEach(adInfo => {
+                    const adData = adInfo.data.data;
+                    const dateIndex = adData.dates.indexOf(date);
+                    
+                    if (dateIndex >= 0) {
+                        // Проверяем что объявление использует нужное видео в этот день
+                        const dayVideoNamesStr = adData.videoName[dateIndex] || "";
+                        const videoNamesArray = dayVideoNamesStr.split('\n').filter(name => name.trim() !== '');
+                        
+                        if (videoNamesArray.some(name => name.trim() === videoName.trim())) {
+                            console.log(`📊 AGGREGATE: Adding data from ad ${adInfo.name} (group: ${adInfo.groupName}) for date ${date} - leads: ${adData.leadsDay[dateIndex]}, spend: ${adData.spendDay[dateIndex]}`);
+                            
+                            dayLeads += adData.leadsDay[dateIndex] || 0;
+                            daySpend += adData.spendDay[dateIndex] || 0;
+                            dayCostFromSources += adData.costFromSourcesDay ? (adData.costFromSourcesDay[dateIndex] || 0) : 0;
+                            
+                            // Собираем клики и показы
+                            const linkClicksStr = adData.linkClicks[dateIndex] || "";
+                            const impressionsStr = adData.impressions[dateIndex] || "";
+                            
+                            if (linkClicksStr) {
+                                linkClicksStr.split('\n').forEach(line => {
+                                    const clickValue = parseInt(line.trim());
+                                    if (!isNaN(clickValue)) dayClicks += clickValue;
+                                });
+                            }
+                            
+                            if (impressionsStr) {
+                                impressionsStr.split('\n').forEach(line => {
+                                    const impressionValue = parseInt(line.trim());
+                                    if (!isNaN(impressionValue)) dayImpressions += impressionValue;
+                                });
+                            }
+                            
+                            // Собираем остальные метрики
+                            if (adData.freq[dateIndex]) dayFreqValues.push(adData.freq[dateIndex]);
+                            if (adData.siteUrl[dateIndex]) {
+                                adData.siteUrl[dateIndex].split('\n').forEach(url => {
+                                    if (url.trim() !== "") daySiteUrls.push(url.trim());
+                                });
+                            }
+                            if (adData.budget[dateIndex]) dayBudgetValues.push(adData.budget[dateIndex]);
+                            if (adData.avgWatchTime[dateIndex]) dayAvgWatchTimeValues.push(adData.avgWatchTime[dateIndex]);
+                            
+                            dayVideoNames.push(videoName.trim());
+                        }
+                    }
+                });
+                
+                // Записываем агрегированные данные дня
+                const dayCpl = dayLeads > 0 ? daySpend / dayLeads : 0;
+                
+                aggregatedData.leadsDay.push(dayLeads);
+                aggregatedData.spendDay.push(daySpend);
+                aggregatedData.costFromSourcesDay.push(dayCostFromSources);
+                aggregatedData.cplDay.push(dayCpl);
+                aggregatedData.linkClicks.push(dayClicks.toString());
+                aggregatedData.impressions.push(dayImpressions.toString());
+                aggregatedData.maxCPL.push(displayMaxCPL);
+                
+                // Обрабатываем остальные метрики
+                aggregatedData.freq.push(dayFreqValues.join('\n'));
+                aggregatedData.videoName.push(Array.from(new Set(dayVideoNames)).join('\n'));
+                aggregatedData.siteUrl.push(Array.from(new Set(daySiteUrls)).join('\n'));
+                aggregatedData.budget.push(dayBudgetValues.join('\n'));
+                aggregatedData.avgWatchTime.push(dayAvgWatchTimeValues.join('\n'));
+                
+                // Рассчитываем производные метрики
+                const dayCtr = dayImpressions > 0 ? ((dayClicks / dayImpressions) * 100).toFixed(2) + '%' : '0,00%';
+                const dayCpc = dayClicks > 0 ? (daySpend / dayClicks).toFixed(2) : '0,00';
+                const dayCpm = dayImpressions > 0 ? ((daySpend / dayImpressions) * 1000).toFixed(2) : '0,00';
+                const dayConversion = dayClicks > 0 ? ((dayLeads / dayClicks) * 100).toFixed(2) + '%' : '--';
+                
+                aggregatedData.ctr.push(dayCtr);
+                aggregatedData.cpc.push(dayCpc);
+                aggregatedData.cpm.push(dayCpm);
+                aggregatedData.conversionDay.push(dayConversion);
+                
+                // Рейтинг
+                let rating = "";
+                if (dayLeads === 0 && daySpend > 0) {
+                    rating = "D";
+                } else if (dayCpl > 0) {
+                    const percentage = (dayCpl / displayMaxCPL) * 100;
+                    if (percentage <= 35) rating = "A";
+                    else if (percentage <= 65) rating = "B";
+                    else if (percentage <= 90) rating = "C";
+                    else rating = "D";
+                }
+                aggregatedData.ratings.push(rating);
+                
+                // CPL с учетом сбросов
+                if (dayLeads === 0 && daySpend === 0) {
+                    aggCost = 0;
+                    aggLeads = 0;
+                    aggregatedData.cplCumulative.push(0);
+                    aggregatedData.cplCumulativeColors.push("gray");
+                    aggregatedData.cplCumulativeArrows.push("");
+                    prevDayGood = null;
+                } else {
+                    const dayIsGood = dayLeads > 0 && dayCpl <= displayMaxCPL;
+
+                    let arrow = "";
+                    if (prevDayGood !== null && prevDayGood !== dayIsGood) {
+                        arrow = dayIsGood ? "↗" : "↘";
+                    }
+
+                    if (prevDayGood !== null && prevDayGood !== dayIsGood) {
+                        aggCost = daySpend;
+                        aggLeads = dayLeads;
+                    } else {
+                        aggCost += daySpend;
+                        aggLeads += dayLeads;
+                    }
+
+                    const finalCpl = aggLeads > 0 ? aggCost / aggLeads : 0;
+                    aggregatedData.cplCumulative.push(finalCpl);
+                    aggregatedData.cplCumulativeColors.push(dayIsGood ? "green" : "red");
+                    aggregatedData.cplCumulativeArrows.push(arrow);
+
+                    prevDayGood = dayIsGood;
+                }
+                
+                console.log(`📊 AGGREGATE: Date ${date} - Total leads: ${dayLeads}, spend: ${daySpend.toFixed(2)}`);
+            });
+            
+            // Создаем columnClasses
+            aggregatedData.columnClasses = aggregatedData.dates.map((date, index) => {
+                const isActive = aggregatedData.leadsDay[index] > 0 || aggregatedData.spendDay[index] > 0;
+                return isActive ? 'normal-spend' : 'zero-spend-single';
+            });
+            aggregatedData.columnSpans = new Array(aggregatedData.dates.length).fill(1);
+            
+            console.log(`✅ AGGREGATE: Completed aggregation for ${level} with video ${videoName} - total leads: ${aggregatedData.leadsDay.reduce((a,b) => a+b, 0)}`);
+            return aggregatedData;
+        }
+
+        function calculateMetricsFromData(data) {
+            const totalLeads = data.leadsDay.reduce((sum, val) => sum + (val || 0), 0);
+            const totalSpend = data.spendDay.reduce((sum, val) => sum + (val || 0), 0);
+            const activeDays = data.leadsDay.filter((leads, index) => leads > 0 || data.spendDay[index] > 0).length;
+            const avgCPL = totalLeads > 0 ? totalSpend / totalLeads : 0;
+            const displayMaxCPL = 3.5;
+            const daysInNorm = data.leadsDay.filter((leads, index) => {
+                const daySpend = data.spendDay[index] || 0;
+                const dayCpl = leads > 0 ? daySpend / leads : 0;
+                return leads > 0 && dayCpl <= displayMaxCPL;
+            }).length;
+            
+            const uniqueVideos = new Set();
+            const uniqueSites = new Set();
+            data.videoName.forEach(videoStr => {
+                if (videoStr) {
+                    videoStr.split('\n').forEach(video => {
+                        if (video.trim() !== '') uniqueVideos.add(video.trim());
+                    });
+                }
+            });
+            data.siteUrl.forEach(siteStr => {
+                if (siteStr) {
+                    siteStr.split('\n').forEach(site => {
+                        if (site.trim() !== '') uniqueSites.add(site.trim());
+                    });
+                }
+            });
+            
+            const totalClicks = data.linkClicks.reduce((sum, clicksStr) => {
+                if (clicksStr) {
+                    const clicks = parseInt(clicksStr) || 0;
+                    return sum + clicks;
+                }
+                return sum;
+            }, 0);
+            
+            const cr = totalClicks > 0 ? ((totalLeads / totalClicks) * 100).toFixed(2) + '%' : '0,00%';
+            
+            return {
+                activeDays: activeDays,
+                daysInNorm: daysInNorm,
+                daysBelowAllowed: activeDays - daysInNorm,
+                cr: cr,
+                videos: uniqueVideos.size,
+                sites: uniqueSites.size,
+                videoNames: Array.from(uniqueVideos).join('\n'),
+                siteUrls: Array.from(uniqueSites).join('\n')
+            };
+        }
+
+        function createEmptyDataStructure() {
+            return {
+                dates: [],
+                ratings: [],
+                cplDay: [],
+                leadsDay: [],
+                spendDay: [],
+                costFromSourcesDay: [],
+                conversionDay: [],
+                maxCPL: [],
+                cplCumulative: [],
+                cplCumulativeColors: [],
+                cplCumulativeArrows: [],
+                freq: [],
+                ctr: [],
+                cpm: [],
+                linkClicks: [],
+                cpc: [],
+                avgWatchTime: [],
+                videoName: [],
+                siteUrl: [],
+                budget: [],
+                impressions: [],
+                columnClasses: [],
+                columnSpans: []
+            };
+        }
+
         // Функция для форматирования содержимого подсказок
         function formatTooltipContent(content, isUrls = false) {
             if (!content || content === "Нет данных" || content.trim() === "") {
@@ -5410,8 +5819,10 @@
           </div>
         `;
 
-                // Реструктурируем данные по видео
+                // ИСПРАВЛЕНО: Создаем структуру видео с правильной агрегацией данных
                 const videoStructure = {};
+                
+                // Сначала собираем все объявления по видео
                 Object.keys(buyerGroupsData).forEach(buyerName => {
                     const buyerData = buyerGroupsData[buyerName];
                     Object.keys(buyerData.campaigns || {}).forEach(campaignName => {
@@ -5433,21 +5844,70 @@
                                         }
                                         if (!videoStructure[videoName].campaigns[campaignName]) {
                                             videoStructure[videoName].campaigns[campaignName] = {
-                                                campaignData: campaignData.campaignData,
-                                                groups: {}
+                                                groups: {},
+                                                ads: [] // Собираем объявления для агрегации
                                             };
                                         }
                                         if (!videoStructure[videoName].campaigns[campaignName].groups[groupName]) {
                                             videoStructure[videoName].campaigns[campaignName].groups[groupName] = {
-                                                groupData: groupData.groupData,
                                                 ads: {}
                                             };
                                         }
+                                        // ИСПРАВЛЕНО: Создаем уникальный ключ для объявления включающий группу
+                                        const uniqueAdKey = `${groupName}:::${adName}`;
                                         videoStructure[videoName].campaigns[campaignName].groups[groupName].ads[adName] = adData;
+                                        
+                                        // Проверяем что такого объявления еще нет в кампании
+                                        const existingAd = videoStructure[videoName].campaigns[campaignName].ads.find(
+                                            ad => ad.name === adName && ad.groupName === groupName
+                                        );
+                                        
+                                        if (!existingAd) {
+                                            videoStructure[videoName].campaigns[campaignName].ads.push({
+                                                name: adName,
+                                                data: adData,
+                                                groupName: groupName,
+                                                uniqueKey: uniqueAdKey
+                                            });
+                                            console.log(`🔧 STRUCTURE: Added unique ad ${uniqueAdKey} to campaign ${campaignName}`);
+                                        }
                                     });
                                 }
                             });
                         });
+                    });
+                });
+                
+                // ИСПРАВЛЕНО: Теперь агрегируем данные для кампаний и групп ТОЛЬКО из объявлений с нужным видео
+                Object.keys(videoStructure).forEach(videoName => {
+                    const videoData = videoStructure[videoName];
+                    console.log(`🔧 AGGREGATING data for video: ${videoName}`);
+                    
+                    Object.keys(videoData.campaigns).forEach(campaignName => {
+                        const campaignStructure = videoData.campaigns[campaignName];
+                        const campaignAds = campaignStructure.ads;
+                        
+                        // Агрегируем данные кампании из объявлений с этим видео
+                        console.log(`🔧 Aggregating campaign ${campaignName} from ${campaignAds.length} ads`);
+                        const aggregatedCampaignData = aggregateDataFromAds(campaignAds, videoName, 'campaign');
+                        campaignStructure.campaignData = {
+                            data: aggregatedCampaignData,
+                            metrics: calculateMetricsFromData(aggregatedCampaignData)
+                        };
+                        
+                        // Агрегируем данные групп из объявлений
+                        Object.keys(campaignStructure.groups).forEach(groupName => {
+                            const groupAds = campaignAds.filter(ad => ad.groupName === groupName);
+                            console.log(`🔧 Aggregating group ${groupName} from ${groupAds.length} ads`);
+                            const aggregatedGroupData = aggregateDataFromAds(groupAds, videoName, 'group');
+                            campaignStructure.groups[groupName].groupData = {
+                                data: aggregatedGroupData,
+                                metrics: calculateMetricsFromData(aggregatedGroupData)
+                            };
+                        });
+                        
+                        // Убираем временный массив объявлений
+                        delete campaignStructure.ads;
                     });
                 });
 
@@ -5796,6 +6256,7 @@
                                   ${Object.keys(groupData.ads || {})
                                                     .map((adName, adIndex) => {
                                                         const adData = groupData.ads[adName];
+                                                        console.log(`🔧 CREATING AD HTML: Video: ${videoName}, Campaign: ${campaignName}, Group: ${groupName}, Ad: ${adName}, Index: ${adIndex}`);
                                                         let cleanAdName = String(
                                                             adName || `ad_${adIndex}`
                                                         )
@@ -5807,7 +6268,8 @@
                                                             cleanAdName = `ad_${adIndex}`;
                                                         }
 
-                                                        const adId = `enhanced_ad_${cleanVideoName}_${cleanCampaignName}_${cleanGroupName}_${cleanAdName}_${adIndex}`;
+                                                        // ИСПРАВЛЕНО: Создаем уникальный ID включающий группу для избежания дублирования
+                                                        const adId = `enhanced_ad_${cleanVideoName}_${cleanCampaignName}_${cleanGroupName}_${cleanAdName}_${groupIndex}_${adIndex}`;
                                                         const adChartId = `chart_${adId}`;
                                                         const adTableId = `table_${adId}`;
 
@@ -5977,7 +6439,7 @@
                         
                         console.log('📊 VIDEO: Processing dates for video:', videoName, 'dates:', sortedVideoDates.length);
 
-                        // Агрегируем данные по дням из всех кампаний этого видео
+                        // ИСПРАВЛЕНО: Агрегируем данные с уровня ОБЪЯВЛЕНИЙ для точности по креативам
                         let aggCost = 0, aggLeads = 0, prevDayGood = null;
                         
                         sortedVideoDates.forEach((date) => {
@@ -5985,67 +6447,72 @@
                             let dayClicks = 0, dayImpressions = 0;
                             let dayFreqValues = [], dayVideoNames = [], daySiteUrls = [], dayBudgetValues = [], dayAvgWatchTimeValues = [];
 
-                            // Агрегируем данные из всех кампаний для этого видео
+                            // ИСПРАВЛЕНО: Агрегируем данные только с уровня объявлений для точности
                             Object.values(videoData.campaigns || {}).forEach(campaignData => {
-                                if (campaignData.campaignData && campaignData.campaignData.data) {
-                                    const dateIndex = campaignData.campaignData.data.dates.indexOf(date);
-                                    if (dateIndex >= 0) {
-                                        const dayVideoNamesStr = campaignData.campaignData.data.videoName[dateIndex] || "";
-                                        const videoNamesArray = dayVideoNamesStr.split('\n').filter(name => name.trim() !== '');
-                                        
-                                        // Проверяем что наше видео есть в этот день в этой кампании
-                                        if (videoNamesArray.some(name => name.trim() === videoName.trim())) {
-                                            dayLeads += campaignData.campaignData.data.leadsDay[dateIndex] || 0;
-                                            daySpend += campaignData.campaignData.data.spendDay[dateIndex] || 0;
-                                            dayCostFromSources += campaignData.campaignData.data.costFromSourcesDay ? (campaignData.campaignData.data.costFromSourcesDay[dateIndex] || 0) : 0;
-                                            
-                                            // Собираем клики и показы
-                                            const linkClicksStr = campaignData.campaignData.data.linkClicks[dateIndex] || "";
-                                            const impressionsStr = campaignData.campaignData.data.impressions[dateIndex] || "";
-                                            
-                                            if (linkClicksStr) {
-                                                const clicksLines = linkClicksStr.split('\n').filter(line => line.trim() !== "");
-                                                clicksLines.forEach(line => {
-                                                    const clickValue = parseInt(line.trim());
-                                                    if (!isNaN(clickValue)) dayClicks += clickValue;
-                                                });
-                                            }
-                                            
-                                            if (impressionsStr) {
-                                                const impressionLines = impressionsStr.split('\n').filter(line => line.trim() !== "");
-                                                impressionLines.forEach(line => {
-                                                    const impressionValue = parseInt(line.trim());
-                                                    if (!isNaN(impressionValue)) dayImpressions += impressionValue;
-                                                });
-                                            }
+                                Object.values(campaignData.groups || {}).forEach(groupData => {
+                                    Object.values(groupData.ads || {}).forEach(adData => {
+                                        if (adData && adData.data) {
+                                            const dateIndex = adData.data.dates.indexOf(date);
+                                            if (dateIndex >= 0) {
+                                                // Проверяем видео объявления в этот день
+                                                const dayVideoNamesStr = adData.data.videoName[dateIndex] || "";
+                                                const videoNamesArray = dayVideoNamesStr.split('\n').filter(name => name.trim() !== '');
+                                                
+                                                // Добавляем данные ТОЛЬКО если это объявление использует наше видео
+                                                if (videoNamesArray.some(name => name.trim() === videoName.trim())) {
+                                                    console.log(`📊 VIDEO AGGREGATION: ${videoName} - Date: ${date} - Ad leads: ${adData.data.leadsDay[dateIndex]}, spend: ${adData.data.spendDay[dateIndex]}`);
+                                                    
+                                                    dayLeads += adData.data.leadsDay[dateIndex] || 0;
+                                                    daySpend += adData.data.spendDay[dateIndex] || 0;
+                                                    dayCostFromSources += adData.data.costFromSourcesDay ? (adData.data.costFromSourcesDay[dateIndex] || 0) : 0;
+                                                    
+                                                    // Собираем клики и показы с уровня объявлений
+                                                    const linkClicksStr = adData.data.linkClicks[dateIndex] || "";
+                                                    const impressionsStr = adData.data.impressions[dateIndex] || "";
+                                                    
+                                                    if (linkClicksStr) {
+                                                        const clicksLines = linkClicksStr.split('\n').filter(line => line.trim() !== "");
+                                                        clicksLines.forEach(line => {
+                                                            const clickValue = parseInt(line.trim());
+                                                            if (!isNaN(clickValue)) dayClicks += clickValue;
+                                                        });
+                                                    }
+                                                    
+                                                    if (impressionsStr) {
+                                                        const impressionLines = impressionsStr.split('\n').filter(line => line.trim() !== "");
+                                                        impressionLines.forEach(line => {
+                                                            const impressionValue = parseInt(line.trim());
+                                                            if (!isNaN(impressionValue)) dayImpressions += impressionValue;
+                                                        });
+                                                    }
 
-                                            // Собираем остальные метрики
-                                            const freqStr = campaignData.campaignData.data.freq[dateIndex] || "";
-                                            if (freqStr) dayFreqValues.push(freqStr);
-                                            
-                                            const siteUrlStr = campaignData.campaignData.data.siteUrl[dateIndex] || "";
-                                            if (siteUrlStr) {
-                                                siteUrlStr.split('\n').forEach(url => {
-                                                    if (url.trim() !== "") daySiteUrls.push(url.trim());
-                                                });
-                                            }
-                                            
-                                            const budgetStr = campaignData.campaignData.data.budget[dateIndex] || "";
-                                            if (budgetStr) dayBudgetValues.push(budgetStr);
-                                            
-                                            const avgWatchTimeStr = campaignData.campaignData.data.avgWatchTime[dateIndex] || "";
-                                            if (avgWatchTimeStr) dayAvgWatchTimeValues.push(avgWatchTimeStr);
-                                            
-                                            // Добавляем название видео
-                                            if (videoNamesArray.includes(videoName.trim())) {
-                                                dayVideoNames.push(videoName.trim());
+                                                    // Собираем остальные метрики с объявлений
+                                                    const freqStr = adData.data.freq[dateIndex] || "";
+                                                    if (freqStr) dayFreqValues.push(freqStr);
+                                                    
+                                                    const siteUrlStr = adData.data.siteUrl[dateIndex] || "";
+                                                    if (siteUrlStr) {
+                                                        siteUrlStr.split('\n').forEach(url => {
+                                                            if (url.trim() !== "") daySiteUrls.push(url.trim());
+                                                        });
+                                                    }
+                                                    
+                                                    const budgetStr = adData.data.budget[dateIndex] || "";
+                                                    if (budgetStr) dayBudgetValues.push(budgetStr);
+                                                    
+                                                    const avgWatchTimeStr = adData.data.avgWatchTime[dateIndex] || "";
+                                                    if (avgWatchTimeStr) dayAvgWatchTimeValues.push(avgWatchTimeStr);
+                                                    
+                                                    // Добавляем название видео (только наше)
+                                                    dayVideoNames.push(videoName.trim());
+                                                }
                                             }
                                         }
-                                    }
-                                }
+                                    });
+                                });
                             });
                             
-                            console.log(`📊 VIDEO: Date ${date} - Leads: ${dayLeads}, Spend: ${daySpend}, Cost: ${dayCostFromSources}`);
+                            console.log(`📊 VIDEO FINAL: ${videoName} - Date: ${date} - Total leads: ${dayLeads}, spend: ${daySpend.toFixed(2)}, cost: ${dayCostFromSources.toFixed(2)}`);
 
                             const dayCpl = dayLeads > 0 ? daySpend / dayLeads : 0;
                             const displayMaxCPL = 3.5;
@@ -6185,15 +6652,17 @@
                                 const campaignChartId = `chart_${campaignId}`;
                                 const campaignTableId = `table_${campaignId}`;
 
-                                // Создаем график и таблицу для кампании
+                                // Создаем ОТФИЛЬТРОВАННЫЕ данные для кампании под конкретным видео
                                 if (campaignData.campaignData) {
                                     (function (cName, cData, cChartId, cTableId, vName) {
-                                        displaySegmentTable(cTableId, cData.data, "campaign", userStartDate, userEndDate);
+                                        // ИСПРАВЛЕНО: Фильтруем данные кампании только для конкретного видео
+                                        const filteredCampaignData = filterCampaignDataByVideo(cData.data, vName);
+                                        displaySegmentTable(cTableId, filteredCampaignData, "campaign", userStartDate, userEndDate);
                                         displaySegmentChart(
                                             cChartId,
                                             article,
                                             `${vName} → ${cName}`,
-                                            cData.data
+                                            filteredCampaignData
                                         );
                                     })(campaignName, campaignData.campaignData, campaignChartId, campaignTableId, videoName);
                                 }
@@ -6218,15 +6687,17 @@
                                         const groupChartId = `chart_${groupId}`;
                                         const groupTableId = `table_${groupId}`;
 
-                                        // Создаем график и таблицу для группы
+                                        // Создаем ОТФИЛЬТРОВАННЫЕ данные для группы под конкретной кампанией и видео
                                         if (groupData.groupData) {
                                             (function (gName, gData, gChartId, gTableId, vName, cName) {
-                                                displaySegmentTable(gTableId, gData.data, "group", userStartDate, userEndDate);
+                                                // ИСПРАВЛЕНО: Фильтруем данные группы только для конкретного видео и кампании
+                                                const filteredGroupData = filterGroupDataByVideoAndCampaign(gData.data, vName, cName);
+                                                displaySegmentTable(gTableId, filteredGroupData, "group", userStartDate, userEndDate);
                                                 displaySegmentChart(
                                                     gChartId,
                                                     article,
                                                     `${vName} → ${cName} → ${gName}`,
-                                                    gData.data
+                                                    filteredGroupData
                                                 );
                                             })(groupName, groupData.groupData, groupChartId, groupTableId, videoName, campaignName);
                                         }
@@ -6251,18 +6722,19 @@
                                                 const adChartId = `chart_${adId}`;
                                                 const adTableId = `table_${adId}`;
 
-                                                // Создаем график и таблицу для объявления
-                                                if (adData) {
-                                                    (function (aName, aData, aChartId, aTableId, vName, cName, gName) {
-                                                        displaySegmentTable(aTableId, aData.data, "ad", userStartDate, userEndDate);
-                                                        displaySegmentChart(
-                                                            aChartId,
-                                                            article,
-                                                            `${vName} → ${cName} → ${gName} → ${aName}`,
-                                                            aData.data
-                                                        );
-                                                    })(adName, adData, adChartId, adTableId, videoName, campaignName, groupName);
-                                                }
+                                                // ИСПРАВЛЕНО: Создаем график и таблицу для объявления с учетом группы
+                                                        if (adData) {
+                                                            (function (aName, aData, aChartId, aTableId, vName, cName, gName, aIndex) {
+                                                                console.log(`📊 CREATING AD CHART/TABLE: ${aName} in group ${gName}, chartId: ${aChartId}, tableId: ${aTableId}`);
+                                                                displaySegmentTable(aTableId, aData.data, "ad", userStartDate, userEndDate);
+                                                                displaySegmentChart(
+                                                                    aChartId,
+                                                                    article,
+                                                                    `${vName} → ${cName} → ${gName} → ${aName}`,
+                                                                    aData.data
+                                                                );
+                                                            })(adName, adData, adChartId, adTableId, videoName, campaignName, groupName, adIndex);
+                                                        }
                                             }
                                         );
                                     }
